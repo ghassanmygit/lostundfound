@@ -6,7 +6,9 @@ const allowedCategories = [
   "lainnya",
 ];
 const allowedImageTypes = ["image/jpeg", "image/png"];
-const maxImageSizeBytes = 2 * 1024 * 1024;
+
+const maxImageSizeMb = 5;
+const maxImageSizeBytes = maxImageSizeMb * 1024 * 1024;
 
 const maxNamaBarangLength = 100;
 const maxLokasiLength = 150; 
@@ -53,7 +55,12 @@ const validateLaporanTemuan = (data = {}, file) => {
     );
   }
 
+  if (file.size > maxImageSizeBytes)
+  errors.push(`Ukuran foto maksimal ${maxImageSizeMb} MB`);
+
+module.exports = { validateLaporanTemuan, maxImageSizeBytes, maxImageSizeMb };
+  
   return { isValid: errors.length === 0, errors };
 };
 
-module.exports = { validateLaporanTemuan, maxImageSizeBytes };
+module.exports = { validateLaporanTemuan, maxImageSizeBytes, maxImageSizeMb };
