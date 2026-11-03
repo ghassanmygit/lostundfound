@@ -1,6 +1,12 @@
 # lostundfound
 Repositori untuk Website Lost and Found oleh Kelompok 6 Rekayasa Perangkat Lunak - 3D
 
+*Anggota:*
+1) Faiz Abyakta Santoso (NIM. 1251420135) - KETUA
+2) Fandy Ahmad Fahrezy (NIM. 1251420098)
+3) Muhammad Ghassan Dzul Hannan (NIM. 1251420089)
+4) Yazid Dio Alamgir (NIM. 1251420097)
+
 Tugas Praktik RPL: *Software Construction & Good Coding Practices*
 
 ## 1. Link Repository
