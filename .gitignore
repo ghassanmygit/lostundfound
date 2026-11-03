@@ -1,2 +1,7 @@
-   node_modules
-   .env
+# isi .gitignore harus persis (tanpa spasi di depan):
+# node_modules
+# .env
+
+git rm -r --cached node_modules
+git add .gitignore
+git commit -m "chore: perbaiki .gitignore dan hapus node_modules dari repo"
