@@ -8,6 +8,10 @@ const allowedCategories = [
 const allowedImageTypes = ["image/jpeg", "image/png"];
 const maxImageSizeBytes = 2 * 1024 * 1024;
 
+const maxNamaBarangLength = 100;
+const maxLokasiLength = 150; 
+const maxDeskripsiLength = 500;
+
 const isFilledString = (value) =>
   typeof value === "string" && value.trim().length > 0;
 const isWithinMaxLength = (value, maxLength) =>
