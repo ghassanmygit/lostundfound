@@ -25,10 +25,10 @@ const validateLaporanTemuan = (data = {}, file) => {
     errors.push("ID pengguna tidak valid");
   }
 
-  if (!isFilledString(data.namaBarang)) {
+    if (!isFilledString(data.namaBarang)) {
     errors.push("Nama barang wajib diisi");
-  } else if (!isWithinMaxLength(data.namaBarang, 100)) {
-    errors.push("Nama barang maksimal 100 karakter");
+  } else if (!isWithinMaxLength(data.namaBarang, maxNamaBarangLength)) {
+    errors.push(`Nama barang maksimal ${maxNamaBarangLength} karakter`);
   }
 
   if (!allowedCategories.includes(data.kategori)) {
@@ -39,21 +39,18 @@ const validateLaporanTemuan = (data = {}, file) => {
 
   if (!isFilledString(data.lokasiPenitipan)) {
     errors.push("Pos satpam tempat barang dititipkan wajib diisi");
+  } else if (!isWithinMaxLength(data.lokasiPenitipan, maxLokasiLength)) {
+    errors.push(`Lokasi penitipan maksimal ${maxLokasiLength} karakter`);
   }
 
   if (
     data.deskripsi !== undefined &&
-    (typeof data.deskripsi !== "string" || data.deskripsi.trim().length > 500)
+    (typeof data.deskripsi !== "string" ||
+      !isWithinMaxLength(data.deskripsi, maxDeskripsiLength))
   ) {
-    errors.push("Deskripsi harus berupa teks maksimal 500 karakter");
-  }
-
-  if (!file) {
-    errors.push("Foto barang wajib diunggah");
-  } else {
-    if (!allowedImageTypes.includes(file.mimetype))
-      errors.push("Foto harus berformat JPG atau PNG");
-    if (file.size > maxImageSizeBytes) errors.push("Ukuran foto maksimal 2 MB");
+    errors.push(
+      `Deskripsi harus berupa teks maksimal ${maxDeskripsiLength} karakter`,
+    );
   }
 
   return { isValid: errors.length === 0, errors };
