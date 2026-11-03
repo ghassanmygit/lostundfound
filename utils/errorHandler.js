@@ -1,6 +1,7 @@
 const fs = require("fs");
 const multer = require("multer");
 const AppError = require("./appError");
+const { maxImageSizeMb } = require("./validators");
 
 const errorHandler = (err, req, res, next) => {
   if (req.file) fs.unlink(req.file.path, () => {});
@@ -8,8 +9,8 @@ const errorHandler = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-        ? "Ukuran foto maksimal 2 MB"
-        : "Unggah file gagal";
+  ? `Ukuran foto maksimal ${maxImageSizeMb} MB`
+  : "Unggah file gagal";
     return res.status(400).json({ success: false, message });
   }
   if (err instanceof AppError) {
