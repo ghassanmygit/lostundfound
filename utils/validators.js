@@ -55,11 +55,15 @@ const validateLaporanTemuan = (data = {}, file) => {
     );
   }
 
-  if (file.size > maxImageSizeBytes)
-  errors.push(`Ukuran foto maksimal ${maxImageSizeMb} MB`);
+    if (!file) {
+    errors.push("Foto barang wajib diunggah");
+  } else {
+    if (!allowedImageTypes.includes(file.mimetype))
+      errors.push("Foto harus berformat JPG atau PNG");
+    if (file.size > maxImageSizeBytes)
+      errors.push(`Ukuran foto maksimal ${maxImageSizeMb} MB`);
+  }
 
-module.exports = { validateLaporanTemuan, maxImageSizeBytes, maxImageSizeMb };
-  
   return { isValid: errors.length === 0, errors };
 };
 
