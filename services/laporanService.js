@@ -2,9 +2,8 @@ const laporanModel = require("../models/laporanModel");
 const AppError = require("../utils/appError");
 const { validateLaporanTemuan } = require("../utils/validators");
 
-// Sesuaikan kedua nilai ini dengan isi kolom jenis_laporan dan status di tabel laporan (ERD).
 const jenisLaporanTemuan = "temuan";
-const statusLaporanAwal = "tersedia";
+const statusLaporanAwal = "Menunggu Verifikasi";
 
 const trimOrNull = (value) =>
   typeof value === "string" && value.trim() ? value.trim() : null;
@@ -27,11 +26,4 @@ const createLaporanTemuan = async (data, file) => {
   return laporanModel.findLaporanById(idLaporan);
 };
 
-const getLaporanById = async (idLaporan) => {
-  const laporan = await laporanModel.findLaporanById(idLaporan);
-  if (!laporan) throw new AppError("Laporan tidak ditemukan", 404);
-
-  return laporan;
-};
-
-module.exports = { createLaporanTemuan, getLaporanById };
+module.exports = { createLaporanTemuan };
