@@ -13,152 +13,105 @@ https://github.com/ghassanmygit/lostundfound.git (branch `feature/fr-02-lapor-te
 
 | Aspek | Keterangan |
 |---|---|
-| Input | `namaBarang`, `kategori`, `lokasiPenitipan` (pos satpam), `deskripsi` (opsional), `foto` (JPG/PNG, maks 2 MB) |
-| Proses | Validasi input → simpan foto dengan nama aman → simpan data laporan |
-| Output | `201` + data laporan, atau `400` + daftar pesan kesalahan |
-| Endpoint | `POST /api/laporan-temuan`, `GET /api/laporan-temuan`, `GET /api/laporan-temuan/:id` |
+| Endpoint | `POST /api/laporan/temuan` (`multipart/form-data`) |
+| Input | `idPengguna`, `namaBarang`, `kategori`, `lokasiPenitipan` (pos satpam), `deskripsi` (opsional), `fotoBarang` (file JPG/PNG, maks 2 MB) |
+| Proses | Upload foto → validasi input → simpan ke tabel `laporan` (MySQL) → ambil kembali data laporan yang tersimpan |
+| Output sukses | `201` + data laporan |
+| Output gagal | `400` + daftar pesan kesalahan; `500` untuk kesalahan server |
 
 ### Keterkaitan dengan Rancangan Sebelumnya (UTS)
 
 | Rancangan | Keterkaitan | Rujukan |
 |---|---|---|
-| Use Case | Aktor mengisi dan mengirim laporan barang temuan | UC-__ |
+| Use Case | Pengguna mengisi dan mengirim laporan barang temuan | UC-__ |
 | Activity Diagram | Isi form → validasi → (gagal: tampil pesan error) / (berhasil: simpan laporan) | AD-__ |
-| Sequence Diagram | Route → Controller → Service → Validator → Model | SD-__ |
-| ERD | Entitas laporan: nama barang, kategori, lokasi penitipan, deskripsi, foto, waktu dibuat | ERD-__ |
+| Sequence Diagram | Route → Controller → Service → Validator → Model → Database | SD-__ |
+| ERD | Tabel `laporan`: `id_laporan`, `id_pengguna`, `jenis_laporan`, `nama_barang`, `kategori`, `deskripsi`, `lokasi`, `tanggal`, `foto_barang`, `status` | ERD-__ |
 
 ### Komponen yang Dikembangkan
 
 | Lapisan | File | Tanggung jawab |
 |---|---|---|
-| Route | `routes/laporanRoutes.js` | Memetakan URL ke controller |
-| Middleware | `middlewares/parseMultipart.js`, `middlewares/errorHandler.js` | Membaca form + foto; menyeragamkan respons error |
+| Route | `routes/laporanRoutes.js` | Memetakan URL ke controller dan middleware upload |
 | Controller | `controllers/laporanController.js` | Mengambil data request dan membentuk response |
-| Service | `services/laporanService.js` | Aturan bisnis: validasi, simpan foto, simpan laporan |
-| Model | `models/laporanModel.js` | Akses data |
-| Utils | `utils/validators.js`, `utils/fileStorage.js`, `utils/appError.js` | Validasi, penyimpanan foto, error terstruktur |
+| Service | `services/laporanService.js` | Aturan bisnis: validasi dan penyimpanan laporan |
+| Model | `models/laporanModel.js` | Akses data ke database memakai prepared statement |
+| Utils | `utils/validators.js` | Validasi input sesuai aturan bisnis |
+| Utils | `utils/upload.js` | Upload foto (multer): batas 2 MB, nama file acak |
+| Utils | `utils/errorHandler.js`, `utils/appError.js` | Penanganan error terpusat dengan pesan yang seragam |
+| Utils | `utils/db.js` | Koneksi MySQL |
 
-Prinsip yang diterapkan: penamaan camelCase yang jelas, modularitas, Single Responsibility, tanpa duplikasi (DRY), validasi input, error handling terpusat, dan format kode yang konsisten.
+Prinsip yang diterapkan: penamaan camelCase, pemisahan kode per tanggung jawab (route, controller, service, model), validasi input, dan error handling terpusat.
 
 ## 3. Temuan Code Review dan Hasil Refactoring (Before–After)
 
-Perilaku fungsional tidak berubah.
+### Temuan 1 — `.gitignore`: aturan tidak berfungsi sehingga `node_modules` ikut ter-commit
 
-### Temuan 1 — `utils/validators.js`: angka ajaib dan pengecekan panjang tidak konsisten
+- **Bagian kode:** `.gitignore`
+- **Masalah:** awalnya isi file berupa komentar dan perintah, lalu setelah diperbaiki setiap barisnya masih diawali spasi sehingga aturan ignore tetap tidak terbaca. Akibatnya `node_modules` dan `.env` ikut masuk repository.
+- **Perbaikan:** aturan ditulis tanpa spasi di depan, dan `node_modules` dilepas dari git dengan `git rm -r --cached node_modules`.
 
-- **Bagian kode:** validasi nama barang dan deskripsi
-- **Masalah:** angka `100` dan `500` tertulis langsung di kode. Nama barang memakai helper `isWithinMaxLength`, sedangkan deskripsi menulis ulang `trim().length > 500` secara manual (logika berulang).
-- **Perbaikan:** batas dijadikan konstanta bernama dan semua pengecekan memakai helper yang sama.
+```
+# BEFORE
+   node_modules
+   .env
+   uploads
+
+# AFTER
+node_modules
+.env
+uploads
+```
+
+### Temuan 2 — `utils/validators.js`: validasi deskripsi crash jika bukan teks
+
+- **Bagian kode:** validasi `deskripsi` pada `validateLaporanTemuan`
+- **Masalah:** `data.deskripsi.trim()` melempar `TypeError` bila deskripsi bukan string, sehingga server mengembalikan error 500 alih-alih pesan validasi.
+- **Perbaikan:** tipe data dicek lebih dulu, dan nilai yang tidak valid ditolak dengan pesan validasi yang jelas.
 
 ```js
 // BEFORE
-} else if (!isWithinMaxLength(data.namaBarang, 100)) {
-  errors.push("Nama barang maksimal 100 karakter");
-}
 if (data.deskripsi && data.deskripsi.trim().length > 500) {
   errors.push("Deskripsi maksimal 500 karakter");
 }
 
 // AFTER
-const maxNamaBarangLength = 100;
-const maxDeskripsiLength = 500;
-...
-if (!isWithinMaxLength(namaBarang, maxNamaBarangLength)) {
-  return [`Nama barang maksimal ${maxNamaBarangLength} karakter`];
-}
-if (!isWithinMaxLength(deskripsi, maxDeskripsiLength)) {
-  return [`Deskripsi maksimal ${maxDeskripsiLength} karakter`];
+if (
+  data.deskripsi !== undefined &&
+  (typeof data.deskripsi !== "string" || data.deskripsi.trim().length > 500)
+) {
+  errors.push("Deskripsi harus berupa teks maksimal 500 karakter");
 }
 ```
 
-### Temuan 2 — `utils/validators.js`: satu fungsi besar dan crash pada deskripsi non-string
+### Temuan 3 — Nama file tidak konsisten (Meaningful Naming)
 
-- **Bagian kode:** fungsi `validateLaporanTemuan`
-- **Masalah:** satu fungsi memvalidasi semua field sekaligus (melanggar Single Responsibility). Selain itu `data.deskripsi.trim()` melempar `TypeError` jika deskripsi bukan string, sehingga server error 500.
-- **Perbaikan:** dipecah menjadi `validateNamaBarang`, `validateKategori`, `validateLokasiPenitipan`, `validateDeskripsi`, dan `validateFoto`. Deskripsi non-string kini ditolak dengan pesan "Deskripsi harus berupa teks".
+- **Bagian kode:** nama file pada folder `controllers`, `models`, `routes`, `services`, dan `utils`
+- **Masalah:** nama file memakai huruf kecil semua (`laporancontrollers.js`), tidak sesuai ketentuan camelCase dan sulit dibaca. Nama jamak (`controllers`, `models`) juga tidak konsisten dengan nama class/objek yang dikandungnya.
+- **Perbaikan:** semua file diganti nama ke camelCase tanpa mengubah isi (`git mv`).
 
-```js
-// BEFORE
-const validateLaporanTemuan = (data = {}, file) => {
-  const errors = [];
-  if (!isFilledString(data.namaBarang)) { ... } else if (...) { ... }
-  if (!allowedCategories.includes(data.kategori)) { ... }
-  if (!isFilledString(data.lokasiPenitipan)) { ... }
-  if (data.deskripsi && data.deskripsi.trim().length > 500) { ... }
-  if (!file) { ... } else {
-    if (!allowedImageTypes.includes(file.mimetype))
-      errors.push("Foto harus berformat JPG atau PNG");
-    if (file.size > maxImageSizeBytes) errors.push("Ukuran foto maksimal 2 MB");
-  }
-  return { isValid: errors.length === 0, errors };
-};
-
-// AFTER
-const validateLaporanTemuan = (data = {}, file) => {
-  const errors = [
-    ...validateNamaBarang(data.namaBarang),
-    ...validateKategori(data.kategori),
-    ...validateLokasiPenitipan(data.lokasiPenitipan),
-    ...validateDeskripsi(data.deskripsi),
-    ...validateFoto(file),
-  ];
-  return { isValid: errors.length === 0, errors };
-};
-```
-
-### Temuan 3 — `utils/appError.js`: error tak terduga tidak bisa dibedakan dari error yang disengaja
-
-- **Bagian kode:** class `AppError` dan `middlewares/errorHandler.js`
-- **Masalah:** `AppError` tidak punya penanda, sehingga error handler tidak bisa membedakan kesalahan input (aman ditampilkan) dari bug (detailnya tidak boleh bocor ke pengguna).
-- **Perbaikan:** ditambah `name`, `isOperational`, dan `Error.captureStackTrace`. `errorHandler` hanya menampilkan pesan asli untuk error `isOperational`; selain itu dibalas "Terjadi kesalahan pada server".
-
-```js
-// BEFORE
-class AppError extends Error {
-  constructor(message, statusCode = 500, details = []) {
-    super(message);
-    this.statusCode = statusCode;
-    this.details = details;
-  }
-}
-
-// AFTER
-class AppError extends Error {
-  constructor(message, statusCode = 500, details = []) {
-    super(message);
-    this.name = "AppError";
-    this.statusCode = statusCode;
-    this.details = details;
-    this.isOperational = true;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-```
-
-### Temuan 4 — Repository: `node_modules` ikut ter-commit dan `.gitignore` tidak berfungsi
-
-- **Bagian kode:** `.gitignore`
-- **Masalah:** isi `.gitignore` berupa komentar dan perintah, bukan aturan ignore, sehingga seluruh `node_modules` masuk repository.
-- **Perbaikan:** `.gitignore` diisi `node_modules/`, `.env`, dan `uploads/`, lalu `node_modules` dilepas dari git dengan `git rm -r --cached node_modules`.
+| Before | After |
+|---|---|
+| `controllers/laporancontrollers.js` | `controllers/laporanController.js` |
+| `models/laporanmodels.js` | `models/laporanModel.js` |
+| `routes/laporanroutes.js` | `routes/laporanRoutes.js` |
+| `services/laporanservices.js` | `services/laporanService.js` |
+| `utils/apperror.js` | `utils/appError.js` |
 
 ## 4. Hasil Pengujian
 
-Dijalankan dengan `npm test` (`tests/laporanTemuan.test.js`).
+Pengujian dilakukan manual lewat Postman/cURL ke `POST /api/laporan/temuan`. Centang kolom yang sesuai setelah pengujian dijalankan.
 
-| ID | FR | Langkah | Sesuai | Tidak sesuai |
-|---|---|---|---|---|
-| TC-01 | FR-02 | Kirim form valid + foto PNG → respons 201, foto tersimpan | [x] | [ ] |
-| TC-02 | FR-02 | Ambil laporan lewat `GET /:id` → data sama dengan yang dikirim | [x] | [ ] |
-| TC-03 | FR-02 | Nama barang kosong → 400 "Nama barang wajib diisi" | [x] | [ ] |
-| TC-04 | FR-02 | Kategori di luar daftar → 400 | [x] | [ ] |
-| TC-05 | FR-02 | Tanpa foto → 400 "Foto barang wajib diunggah" | [x] | [ ] |
-| TC-06 | FR-02 | Foto berformat GIF → 400 | [x] | [ ] |
-| TC-07 | FR-02 | Foto 3 MB → 400 "Ukuran foto maksimal 2 MB" | [x] | [ ] |
-| TC-08 | FR-02 | Kirim JSON (bukan multipart) → 415 | [x] | [ ] |
-| TC-09 | FR-02 | Nama barang `'; DROP TABLE laporan; --` → tersimpan sebagai teks biasa | [x] | [ ] |
-| TC-10 | FR-02 | Kategori `elektronik' OR '1'='1` → 400, tidak ada data tersimpan | [x] | [ ] |
-| TC-11 | FR-02 | Nama 100 karakter lolos, 101 karakter ditolak | [x] | [ ] |
-| TC-12 | FR-02 | Nama file `../../evil.png` dan deskripsi `<script>`/emoji → nama file diganti UUID, teks tersimpan apa adanya | [x] | [ ] |
-| TC-13 | FR-02 | `GET /abc` → 400, `GET /999` → 404 | [x] | [ ] |
-
-Pengelompokan sesuai ketentuan tugas: Normal case (TC-01 sampai TC-02), Invalid input (TC-03 sampai TC-08), Edge case (TC-09 sampai TC-13).
+| ID | FR | Jenis | Langkah | Hasil yang diharapkan | Sesuai | Tidak sesuai |
+|---|---|---|---|---|---|---|
+| TC-01 | FR-02 | Normal | Kirim semua field valid + foto PNG | 201, "Laporan temuan berhasil dibuat" | [ ] | [ ] |
+| TC-02 | FR-02 | Invalid | `namaBarang` dikosongkan | 400, "Nama barang wajib diisi" | [ ] | [ ] |
+| TC-03 | FR-02 | Invalid | `kategori` diisi `senjata` | 400, pesan daftar kategori yang diizinkan | [ ] | [ ] |
+| TC-04 | FR-02 | Invalid | Tanpa file `fotoBarang` | 400, "Foto barang wajib diunggah" | [ ] | [ ] |
+| TC-05 | FR-02 | Invalid | Unggah foto berformat GIF | 400, "Foto harus berformat JPG atau PNG" | [ ] | [ ] |
+| TC-06 | FR-02 | Invalid | Unggah foto lebih dari 2 MB | 400, "Ukuran foto maksimal 2 MB" | [ ] | [ ] |
+| TC-07 | FR-02 | Invalid | `idPengguna` diisi `abc` | 400, "ID pengguna tidak valid" | [ ] | [ ] |
+| TC-08 | FR-02 | Edge | `namaBarang` diisi `'; DROP TABLE laporan; --` | 201, tersimpan sebagai teks biasa, tabel tetap ada | [ ] | [ ] |
+| TC-09 | FR-02 | Edge | `kategori` diisi `elektronik' OR '1'='1` | 400, ditolak oleh daftar kategori | [ ] | [ ] |
+| TC-10 | FR-02 | Edge | `namaBarang` 100 karakter, lalu 101 karakter | 100 karakter diterima (201), 101 ditolak (400) | [ ] | [ ] |
+| TC-11 | FR-02 | Edge | `deskripsi` diisi `<script>alert(1)</script>` dan emoji | 201, tersimpan apa adanya sebagai teks | [ ] | [ ] |
