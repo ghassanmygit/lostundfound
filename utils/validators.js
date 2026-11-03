@@ -32,8 +32,11 @@ const validateLaporanTemuan = (data = {}, file) => {
     errors.push("Pos satpam tempat barang dititipkan wajib diisi");
   }
 
-  if (data.deskripsi && data.deskripsi.trim().length > 500) {
-    errors.push("Deskripsi maksimal 500 karakter");
+  if (
+    data.deskripsi !== undefined &&
+    (typeof data.deskripsi !== "string" || data.deskripsi.trim().length > 500)
+  ) {
+    errors.push("Deskripsi harus berupa teks maksimal 500 karakter");
   }
 
   if (!file) {
