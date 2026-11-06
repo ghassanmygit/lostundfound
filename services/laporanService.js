@@ -8,12 +8,12 @@ const statusLaporanAwal = "Menunggu Verifikasi";
 const trimOrNull = (value) =>
   typeof value === "string" && value.trim() ? value.trim() : null;
 
-const createLaporanTemuan = async (data, file) => {
+const createLaporanTemuan = async (idPengguna, data, file) => {
   const { isValid, errors } = validateLaporanTemuan(data, file);
   if (!isValid) throw new AppError("Validasi gagal", 400, errors);
 
   const idLaporan = await laporanModel.insertLaporan({
-    idPengguna: Number(data.idPengguna),
+    idPengguna,
     jenisLaporan: jenisLaporanTemuan,
     namaBarang: data.namaBarang.trim(),
     kategori: data.kategori,
