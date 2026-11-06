@@ -22,11 +22,6 @@ const isWithinMaxLength = (value, maxLength) =>
 const validateLaporanTemuan = (data = {}, file) => {
   const errors = [];
 
-  const idPengguna = Number(data.idPengguna);
-  if (!Number.isInteger(idPengguna) || idPengguna <= 0) {
-    errors.push("ID pengguna tidak valid");
-  }
-
   if (!isFilledString(data.namaBarang)) {
     errors.push("Nama barang wajib diisi");
   } else if (!isWithinMaxLength(data.namaBarang, maxNamaBarangLength)) {
