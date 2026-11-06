@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const authRoutes = require("./routes/authRoutes");
 const laporanRoutes = require("./routes/laporanRoutes");
 const errorHandler = require("./utils/errorHandler");
 
@@ -12,6 +13,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Lost & Found API berjalan" });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/laporan", laporanRoutes);
 app.use(errorHandler);
 

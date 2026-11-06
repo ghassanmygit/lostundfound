@@ -11,7 +11,7 @@ const maxImageSizeMb = 5;
 const maxImageSizeBytes = maxImageSizeMb * 1024 * 1024;
 
 const maxNamaBarangLength = 100;
-const maxLokasiLength = 150; 
+const maxLokasiLength = 150;
 const maxDeskripsiLength = 500;
 
 const isFilledString = (value) =>
@@ -27,7 +27,7 @@ const validateLaporanTemuan = (data = {}, file) => {
     errors.push("ID pengguna tidak valid");
   }
 
-    if (!isFilledString(data.namaBarang)) {
+  if (!isFilledString(data.namaBarang)) {
     errors.push("Nama barang wajib diisi");
   } else if (!isWithinMaxLength(data.namaBarang, maxNamaBarangLength)) {
     errors.push(`Nama barang maksimal ${maxNamaBarangLength} karakter`);
@@ -55,7 +55,7 @@ const validateLaporanTemuan = (data = {}, file) => {
     );
   }
 
-    if (!file) {
+  if (!file) {
     errors.push("Foto barang wajib diunggah");
   } else {
     if (!allowedImageTypes.includes(file.mimetype))
@@ -67,4 +67,10 @@ const validateLaporanTemuan = (data = {}, file) => {
   return { isValid: errors.length === 0, errors };
 };
 
-module.exports = { validateLaporanTemuan, maxImageSizeBytes, maxImageSizeMb };
+module.exports = {
+  validateLaporanTemuan,
+  maxImageSizeBytes,
+  maxImageSizeMb,
+  isFilledString,
+  isWithinMaxLength,
+};
