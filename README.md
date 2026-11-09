@@ -1,4 +1,4 @@
-# Lost & Found — FR-01 Autentikasi dan FR-02 Lapor Barang Temuan
+# Lost & Found — Backend: FR-01 Autentikasi, FR-02 Manajemen Laporan, dan FR-07 Verifikasi Laporan Temuan
 
 Repositori untuk Website Lost and Found oleh **Kelompok 6 Rekayasa Perangkat Lunak - 3D**.
 
@@ -16,8 +16,11 @@ https://github.com/ghassanmygit/lostundfound
 
 | Branch | Isi |
 |---|---|
-| `feature/fr-02-lapor-temuan` | FR-02: lapor barang temuan |
-| `feature/fr-01-login` | FR-01: registrasi, verifikasi email, login (dibuat di atas FR-02, sudah memuat FR-02) |
+| `main` | Versi stabil (penggabungan `backend` dan `frontend`) |
+| `backend` | Seluruh kode API di folder `backend/`: FR-01, FR-02, FR-07 (dan loker dasar untuk FR-06) |
+| `frontend` | Antarmuka (belum dikerjakan) |
+
+Riwayat commit tiap fitur dapat dilihat lewat awalan pesan commit (mis. `feat(FR-07): ...`).
 
 ## 2. Identifikasi FR yang Dikerjakan
 
@@ -44,35 +47,65 @@ Hanya warga kampus yang boleh memakai sistem. Pengguna mendaftar dengan email do
 - Pesan kesalahan login untuk "email tidak ada" dan "kata sandi salah" sengaja sama (`Kredensial tidak valid`) agar tidak membocorkan email yang terdaftar.
 - Kata sandi tidak pernah disimpan atau dikembalikan dalam bentuk asli (hanya hash bcrypt).
 
-### FR-02 — Manajemen Laporan, bagian Lapor Barang Temuan (UC-04)
+### FR-02 — Manajemen Laporan (UC-03 Lapor Barang Hilang dan UC-04 Lapor Barang Temuan)
 
-Pengguna yang sudah login membuat laporan awal barang temuan berisi nama barang, foto, dan pos satpam tempat barang dititipkan. Laporan disimpan dengan status "Menunggu Verifikasi" sampai Satpam memverifikasi barang fisiknya. `idPengguna` pelapor diambil dari token login, bukan dari form.
+Pengguna yang sudah login dapat melaporkan barang temuan maupun barang hilang, dan melihat daftar laporannya sendiri. `idPengguna` pelapor selalu diambil dari token login, bukan dari form.
+
+| Endpoint | Akses | Fungsi |
+|---|---|---|
+| `POST /api/laporan/temuan` | Login | Laporan barang temuan (`multipart/form-data`), status awal "Menunggu Verifikasi" |
+| `POST /api/laporan/hilang` | Login, role `civitas` | Laporan barang hilang (JSON), status awal "Dicari" |
+| `GET /api/laporan/saya` | Login | Daftar laporan milik pengguna yang sedang login, terbaru lebih dulu |
+
+| Aspek | Laporan temuan (UC-04) | Laporan hilang (UC-03) |
+|---|---|---|
+| Input | `namaBarang` (maks 100), `kategori`, `lokasiPenitipan` (pos satpam, maks 150), `deskripsi` (opsional, maks 500), `fotoBarang` (JPG/PNG, maks 5 MB) | `namaBarang` (maks 100), `kategori`, `lokasiTerakhir` (maks 150), `kontak` (8-15 digit, boleh diawali `+`), `deskripsi` (opsional, maks 500) |
+| Proses | Cek login → upload foto → validasi → simpan ke `laporan` → ambil kembali data | Cek login dan role → validasi → simpan ke `laporan` → ambil kembali data |
+| Output sukses | `201` + data laporan, status "Menunggu Verifikasi" | `201` + data laporan, status "Dicari" |
+| Output gagal | `401` tanpa login; `400` + daftar pesan kesalahan; `500` kesalahan server | `401` tanpa login; `403` bila bukan `civitas`; `400` + daftar pesan kesalahan |
+
+### FR-07 — Verifikasi Laporan Temuan (dengan loker dasar dari FR-06 / UC-05)
+
+Sebelum laporan temuan dipublikasikan ke katalog, Satpam mencocokkan barang fisiknya, menyimpannya di loker, lalu mencatat nomor lokernya. Di rancangan, langkah ini adalah `verifikasiBarangFisik(id_laporan, id_loker)`: status barang menjadi "Tersedia" dan status loker menjadi "terisi". Karena itu FR-07 dikerjakan bersama versi minimal tabel loker dan penempatan loker (FR-06).
+
+| Endpoint | Akses | Fungsi |
+|---|---|---|
+| `GET /api/laporan/menunggu` | Login, role `satpam` | Daftar laporan temuan berstatus "Menunggu Verifikasi" (terlama lebih dulu) |
+| `GET /api/loker/kosong` | Login, role `satpam` | Daftar loker yang masih kosong |
+| `POST /api/laporan/:id/verifikasi` | Login, role `satpam` | Verifikasi laporan dan tempatkan di loker (`{"idLoker": 1}`) |
+| `POST /api/laporan/:id/tolak` | Login, role `satpam` | Tolak laporan dengan alasan (`{"alasan": "..."}`) |
 
 | Aspek | Keterangan |
 |---|---|
-| Endpoint | `POST /api/laporan/temuan` (`multipart/form-data`, wajib login) |
-| Input | `namaBarang` (maks 100 karakter), `kategori`, `lokasiPenitipan` (pos satpam, maks 150 karakter), `deskripsi` (opsional, maks 500 karakter), `fotoBarang` (JPG/PNG, maks 5 MB) |
-| Proses | Cek login → upload foto → validasi input → simpan ke tabel `laporan` → ambil kembali data laporan |
-| Output sukses | `201` + data laporan dengan status "Menunggu Verifikasi" |
-| Output gagal | `401` tanpa login; `400` + daftar pesan kesalahan; `500` untuk kesalahan server |
+| Input verifikasi | `id` laporan (path), `idLoker` (bilangan bulat positif) |
+| Proses verifikasi | Validasi → kunci baris laporan dan loker → cek laporan ada, berjenis temuan, dan berstatus "Menunggu Verifikasi" → cek loker ada dan kosong → catat penempatan → ubah status laporan menjadi "Tersedia" dan loker menjadi "terisi" |
+| Output | `200` + data laporan; `400` input tidak valid; `401/403` akses; `404` laporan atau loker tidak ada; `409` laporan sudah diproses, bukan laporan temuan, atau loker sudah terisi |
+
+**Keputusan implementasi**
+- Seluruh perubahan verifikasi (catat penempatan, ubah status laporan, ubah status loker) dijalankan dalam satu **transaksi** (`utils/transaction.js`). Jika salah satu gagal, semuanya dibatalkan sehingga data tidak pernah setengah berubah.
+- Baris laporan dan loker dikunci (`SELECT ... FOR UPDATE`). Pada uji dua satpam memverifikasi dua laporan ke loker yang sama secara bersamaan, hanya satu yang berhasil dan satunya mendapat `409`, tanpa data ganda.
+- Penolakan (`/tolak`) adalah tambahan di luar rancangan, untuk menangani laporan fiktif sesuai tujuan FR-07. Alasan penolakan disimpan di kolom `alasan_penolakan`.
+- Akun `satpam` dibuat manual lewat database (lihat bagian Skema Database).
 
 ### Keterkaitan dengan Rancangan UTS (Dokumen Final Kelompok 6)
 
 | Rancangan | Keterkaitan | Rujukan |
 |---|---|---|
-| Kebutuhan | FR-01: daftar dengan email kampus, verifikasi lewat tautan, login. FR-02: formulir laporan barang (foto, nama, pos satpam) | FR-01 dan FR-02 (Bab 2.2) |
-| Use Case | UC-01 (A1 domain bukan kampus, A2 email sudah terdaftar, A3 gagal kirim email), UC-02 (A1 kredensial tidak valid, A2 akun belum aktif), UC-04 (A1 format/ukuran foto, A2 pos satpam kosong) | Bab 3.2 |
-| Activity Diagram | Alur Civitas Akademika dan Sistem Web untuk registrasi, login, dan lapor temuan | Bab 3.3 |
-| Sequence Diagram | Fase 1: form temuan → `submitLaporan()` → Controller → simpan ke Database dengan status Pending | Bab 3.4 |
-| ERD | Tabel `PENGGUNA` dan `LAPORAN` | Bab 3.5 |
+| Kebutuhan | FR-01: daftar dengan email kampus, verifikasi lewat tautan, login. FR-02: formulir laporan barang. FR-07: pencocokan fisik oleh Satpam sebelum dipublikasikan. FR-06 (sebagian): pencatatan loker | FR-01, FR-02, FR-06, FR-07 (Bab 2.2) |
+| Use Case | UC-01, UC-02, UC-03 (lapor hilang), UC-04 (lapor temuan), UC-05 (input dan penempatan loker) | Bab 3.2 |
+| Activity Diagram | Alur Civitas Akademika, Satpam, dan Sistem Web untuk registrasi, login, lapor, dan verifikasi | Bab 3.3 |
+| Sequence Diagram | Fase 1: `submitLaporan()` dengan status Pending, lalu Satpam `verifikasiBarangFisik(id_laporan, id_loker)` | Bab 3.4 |
+| ERD | Tabel `PENGGUNA`, `LAPORAN`, `LOKER`, dan `PENEMPATAN_LOKER` | Bab 3.5 |
 
 ### Penyesuaian terhadap rancangan dan ERD
 
 | Hal | Rancangan UTS | Implementasi | Alasan |
 |---|---|---|---|
 | Kolom `pengguna` | `id_pengguna`, `nama`, `email`, `role`, `no_wa` | Ditambah `password_hash`, `status_akun`, `token_verifikasi` | Dibutuhkan UC-01/UC-02 untuk kata sandi, status `pending`/`aktif`, dan tautan verifikasi |
-| Kolom `laporan` | `id_laporan`, `id_pelapor`, `nama_barang`, `deskripsi`, `kategori`, `status` | Ditambah `jenis_laporan`, `lokasi_penitipan`, `tanggal`, `foto_barang` | Dibutuhkan UC-04 (pos satpam, foto) dan FR-03 (tanggal). Narasi ERD menyebut jenis laporan dan tanggal, tetapi tidak tergambar |
-| Pengiriman email verifikasi (UC-01 langkah 3, A3) | Tautan dikirim ke email pendaftar | Tautan dicetak di terminal server | Belum ada layanan email. Alur sama, tinggal diganti dengan `nodemailer`. Alternatif A3 (gagal kirim email) belum berlaku |
+| Kolom `laporan` | `id_laporan`, `id_pelapor`, `nama_barang`, `deskripsi`, `kategori`, `status` | Ditambah `jenis_laporan`, `lokasi_penitipan`, `lokasi_terakhir`, `kontak`, `tanggal`, `foto_barang`, `alasan_penolakan`. `lokasi_penitipan` dan `foto_barang` boleh NULL | Satu tabel dipakai laporan temuan dan hilang. Laporan hilang tidak punya foto dan pos penitipan, laporan temuan tidak punya lokasi terakhir dan kontak |
+| Status laporan | "Pending", "Tersedia" | "Menunggu Verifikasi" → "Tersedia" atau "Ditolak" (temuan); "Dicari" (hilang) | Mengikuti narasi rancangan, ditambah status penolakan |
+| Tabel `loker` dan `penempatan_loker` | Dua tabel terpisah (FR-06) | Diimplementasikan sesuai rancangan. `tanggal_keluar` belum dipakai | Cukup untuk FR-07. Pengosongan loker dikerjakan bersama FR-09 |
+| Pengiriman email verifikasi (UC-01 langkah 3, A3) | Tautan dikirim ke email pendaftar | Tautan dicetak di terminal server | Belum ada layanan email. Alur sama, tinggal diganti dengan `nodemailer` |
 | Pengalihan ke dasbor sesuai peran (UC-02 langkah 3) | Sistem membuka sesi dan mengarahkan ke dasbor | API mengembalikan token dan `role` | Pengalihan halaman dilakukan frontend |
 | Sesi | "Sesi (session)" | Token JWT | Lebih sederhana untuk frontend terpisah |
 
@@ -101,15 +134,39 @@ CREATE TABLE IF NOT EXISTS laporan (
   nama_barang VARCHAR(100) NOT NULL,
   kategori VARCHAR(50) NOT NULL,
   deskripsi TEXT NULL,
-  lokasi_penitipan VARCHAR(150) NOT NULL,
+  lokasi_penitipan VARCHAR(150) NULL,
+  lokasi_terakhir VARCHAR(150) NULL,
+  kontak VARCHAR(20) NULL,
   tanggal DATETIME NOT NULL,
-  foto_barang VARCHAR(255) NOT NULL,
+  foto_barang VARCHAR(255) NULL,
   status VARCHAR(30) NOT NULL,
+  alasan_penolakan VARCHAR(255) NULL,
   FOREIGN KEY (id_pelapor) REFERENCES pengguna(id_pengguna)
 );
+
+CREATE TABLE IF NOT EXISTS loker (
+  id_loker INT AUTO_INCREMENT PRIMARY KEY,
+  nomor_loker VARCHAR(20) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'kosong',
+  UNIQUE KEY uq_loker_nomor (nomor_loker)
+);
+
+CREATE TABLE IF NOT EXISTS penempatan_loker (
+  id_penempatan INT AUTO_INCREMENT PRIMARY KEY,
+  id_laporan INT NOT NULL,
+  id_loker INT NOT NULL,
+  id_satpam INT NOT NULL,
+  tanggal_masuk DATETIME NOT NULL,
+  tanggal_keluar DATETIME NULL,
+  FOREIGN KEY (id_laporan) REFERENCES laporan(id_laporan),
+  FOREIGN KEY (id_loker) REFERENCES loker(id_loker),
+  FOREIGN KEY (id_satpam) REFERENCES pengguna(id_pengguna)
+);
+
+INSERT INTO loker (nomor_loker) VALUES ('L-01'), ('L-02'), ('L-03');
 ```
 
-Membuat akun Satpam (setelah akun didaftarkan dan diverifikasi):
+Membuat akun Satpam (setelah akun didaftarkan dan diverifikasi, lalu login ulang agar token membawa role baru):
 
 ```sql
 UPDATE pengguna SET role = 'satpam' WHERE email = 'email-satpam@uinjkt.ac.id';
@@ -117,27 +174,33 @@ UPDATE pengguna SET role = 'satpam' WHERE email = 'email-satpam@uinjkt.ac.id';
 
 ### Komponen yang Dikembangkan
 
+Semua file berada di folder `backend/`.
+
 | Lapisan | File | Tanggung jawab |
 |---|---|---|
 | Entry point | `app.js` | Menyiapkan Express, route, dan error handler |
-| Route | `routes/authRoutes.js`, `routes/laporanRoutes.js` | Memetakan URL ke controller dan middleware |
-| Controller | `controllers/authController.js`, `controllers/laporanController.js` | Mengambil data request dan membentuk response |
-| Service | `services/authService.js`, `services/laporanService.js` | Aturan bisnis: registrasi, verifikasi, login, pembuatan laporan |
-| Model | `models/penggunaModel.js`, `models/laporanModel.js` | Akses data memakai prepared statement (`?`) |
-| Utils | `utils/validators.js`, `utils/authValidators.js` | Validasi input laporan dan autentikasi |
+| Route | `routes/authRoutes.js`, `routes/laporanRoutes.js`, `routes/lokerRoutes.js` | Memetakan URL ke controller dan middleware |
+| Controller | `controllers/authController.js`, `controllers/laporanController.js`, `controllers/verifikasiController.js` | Mengambil data request dan membentuk response |
+| Service | `services/authService.js`, `services/laporanService.js`, `services/verifikasiService.js` | Aturan bisnis: registrasi, login, pembuatan laporan, verifikasi dan penolakan |
+| Model | `models/penggunaModel.js`, `models/laporanModel.js`, `models/lokerModel.js` | Akses data memakai prepared statement (`?`) |
+| Utils | `utils/validators.js`, `utils/authValidators.js`, `utils/verifikasiValidators.js` | Validasi input laporan, autentikasi, dan verifikasi |
 | Utils | `utils/token.js`, `utils/authMiddleware.js` | Membuat dan memeriksa token; `requireAuth` dan `requireRole` |
+| Utils | `utils/transaction.js` | Menjalankan beberapa query sebagai satu transaksi (commit atau rollback) |
 | Utils | `utils/upload.js` | Upload foto (multer): batas ukuran, nama file acak |
 | Utils | `utils/errorHandler.js`, `utils/appError.js`, `utils/db.js` | Penanganan error terpusat dan koneksi pool MySQL |
 
-Prinsip yang diterapkan: penamaan camelCase, pemisahan tanggung jawab per lapisan (SRP), konstanta alih-alih angka langsung (DRY), validasi input sebelum menyentuh database, query berparameter untuk mencegah SQL injection, kata sandi di-hash, dan error handling terpusat.
+Prinsip yang diterapkan: penamaan camelCase, pemisahan tanggung jawab per lapisan (SRP), konstanta alih-alih angka langsung (DRY), validasi input sebelum menyentuh database, query berparameter untuk mencegah SQL injection, kata sandi di-hash, transaksi untuk perubahan yang saling terkait, dan error handling terpusat.
 
 ### Cara Menjalankan
 
 ```bash
+cd backend
 npm install
 # salin .env.example menjadi .env lalu isi nilainya
 npm run dev
 ```
+
+Jalankan perintah dari dalam folder `backend/` karena `.env` dan folder `uploads/` dibaca relatif dari situ. Buat tabel dengan skema di atas lebih dulu.
 
 Isi `.env`:
 
@@ -155,13 +218,15 @@ File `.env` tidak ikut di-commit. Tautan verifikasi muncul di terminal server de
 ### Batasan Saat Ini
 
 - Tautan verifikasi belum dikirim lewat email (dicetak di terminal server).
-- Yang diimplementasikan untuk pelaporan hanya barang temuan (UC-04). Laporan barang hilang (UC-03), verifikasi Satpam (UC-05), daftar laporan milik pengguna, dan fitur lain di luar cakupan tugas ini.
-- Tipe foto dicek dari `mimetype` yang dikirim klien, belum dari isi file.
 - Belum ada fitur lupa kata sandi, kirim ulang tautan verifikasi, dan pembatasan jumlah percobaan login.
+- Tipe foto dicek dari `mimetype` yang dikirim klien, belum dari isi file.
+- JSON yang rusak pada body request masih dijawab `500`, seharusnya `400`.
+- Loker ditambah lewat SQL (belum ada endpoint pengelolaan loker), dan `tanggal_keluar` belum diisi karena pengambilan barang (FR-09) belum dikerjakan.
+- Belum ada katalog dan pencarian (FR-03), klaim (FR-04 dan FR-05), konfirmasi penjemputan (FR-09), dan notifikasi (FR-08).
 
 ## 3. Temuan Code Review dan Hasil Refactoring (Before–After)
 
-Setiap perbaikan di-commit terpisah sehingga before–after dapat dilihat pada riwayat git.
+Setiap perbaikan di-commit terpisah sehingga before–after dapat dilihat pada riwayat git. Path file pada bagian ini relatif terhadap folder `backend/`.
 
 ### Temuan 1 — `lokasiPenitipan` tanpa batas panjang (validasi tidak lengkap)
 
@@ -313,7 +378,7 @@ const createLaporanTemuan = async (idPengguna, data, file) => { ...
 
 ## 4. Hasil Pengujian
 
-Pengujian manual dengan cURL. Lingkungan: Windows, Node.js, MySQL 8.0 lokal, database `lostundfound`.
+Pengujian manual dengan cURL. Lingkungan: Windows, Node.js, MySQL 8.0 lokal, database `lostundfound`. Baris bertanda *(isi)* belum dijalankan dan diisi setelah pengujian.
 
 ### 4.1 FR-01 Autentikasi (6 November 2026)
 
@@ -360,6 +425,54 @@ Pengujian pada tabel ini dijalankan saat `idPengguna` masih dikirim lewat form. 
 | TC-13 | FR-02 | Edge (keamanan) | Kirim laporan dengan token akun A dan `idPengguna` akun lain di form | 201, tersimpan atas nama akun A, field `idPengguna` diabaikan | *(isi)* | *(isi)* |
 | TC-14 | FR-02 | Normal | Kirim laporan dengan token dan tanpa `idPengguna` di form | 201, `id_pelapor` sama dengan id akun yang login | *(isi)* | *(isi)* |
 
+
+### 4.4 FR-02 Laporan Barang Hilang dan Daftar Laporan Saya
+
+| ID | FR | Jenis | Langkah | Hasil yang diharapkan | Hasil aktual | Status |
+|---|---|---|---|---|---|---|
+| TC-H01 | FR-02 | Normal | `POST /api/laporan/hilang` dengan token civitas dan data valid | 201, status "Dicari" | *(isi)* | *(isi)* |
+| TC-H02 | FR-02 | Invalid | `POST /api/laporan/hilang` tanpa token | 401, "Anda harus login terlebih dahulu" | *(isi)* | *(isi)* |
+| TC-H03 | FR-02 | Invalid | Body kosong `{}` | 400, empat pesan: nama barang, kategori, lokasi terakhir, dan kontak wajib | *(isi)* | *(isi)* |
+| TC-H04 | FR-02 | Invalid | `kontak` berisi huruf | 400, "Nomor kontak wajib diisi (8-15 digit, boleh diawali +)" | *(isi)* | *(isi)* |
+| TC-H05 | FR-02 | Invalid | Token satpam untuk lapor hilang | 403, "Anda tidak punya akses ke fitur ini" | *(isi)* | *(isi)* |
+| TC-H06 | FR-02 | Edge (batas) | `lokasiTerakhir` 151 karakter | 400, "Lokasi terakhir maksimal 150 karakter" | *(isi)* | *(isi)* |
+| TC-H07 | FR-02 | Edge (SQL injection) | `namaBarang='; DROP TABLE laporan; --` pada laporan hilang | 201, tersimpan sebagai teks biasa, tabel tetap ada | *(isi)* | *(isi)* |
+| TC-S01 | FR-02 | Normal | `GET /api/laporan/saya` dengan token akun A, setelah A dan B sama-sama membuat laporan | 200, hanya laporan milik A | *(isi)* | *(isi)* |
+| TC-S02 | FR-02 | Invalid | `GET /api/laporan/saya` tanpa token | 401 | *(isi)* | *(isi)* |
+
+### 4.5 FR-07 Verifikasi Laporan Temuan (9 November 2026)
+
+Data uji: laporan temuan id 1 sampai 6 dari pengujian FR-02, loker L-01 sampai L-03, dan akun satpam (id 3).
+
+| ID | FR | Jenis | Langkah | Hasil yang diharapkan | Hasil aktual | Status |
+|---|---|---|---|---|---|---|
+| TC-V01 | FR-07 | Normal | `GET /api/laporan/menunggu` dengan token satpam | 200, daftar laporan temuan berstatus "Menunggu Verifikasi" | 200, 6 laporan, semuanya "Menunggu Verifikasi" | Sesuai |
+| TC-V02 | FR-07 | Normal | Verifikasi laporan 1 ke loker 1 | 200, status "Tersedia" | 200, "Laporan terverifikasi dan barang tersimpan di loker", status "Tersedia" | Sesuai |
+| TC-V03 | FR-07 | Normal | Tolak laporan 3 dengan alasan "Barang tidak sesuai laporan" | 200, status "Ditolak", alasan tersimpan | 200, "Laporan ditolak", status "Ditolak", `alasanPenolakan` terisi | Sesuai |
+| TC-V04 | FR-07 | Normal | `GET /api/loker/kosong` setelah loker 1 terisi | Hanya L-02 dan L-03 | 200, hanya L-02 dan L-03 | Sesuai |
+| TC-V05 | FR-07 | Invalid | Verifikasi ulang laporan 1 | 409, laporan sudah diproses | 409, "Laporan sudah diproses (status: Tersedia)" | Sesuai |
+| TC-V06 | FR-07 | Invalid | Verifikasi laporan 2 ke loker 1 (sudah terisi) | 409, loker sudah terisi | 409, "Loker sudah terisi. Pilih loker lain" | Sesuai |
+| TC-V07 | FR-07 | Invalid | ID laporan `abc` | 400, "ID laporan tidak valid" | 400, "Validasi gagal", errors: "ID laporan tidak valid" | Sesuai |
+| TC-V08 | FR-07 | Invalid | Verifikasi tanpa `idLoker` | 400, "ID loker wajib diisi dan berupa bilangan bulat positif" | 400, errors: "ID loker wajib diisi dan berupa bilangan bulat positif" | Sesuai |
+| TC-V09 | FR-07 | Invalid | `idLoker` 999 (tidak ada) | 404, "Loker tidak ditemukan" | 404, "Loker tidak ditemukan" | Sesuai |
+| TC-V10 | FR-07 | Invalid | Laporan 9999 (tidak ada) | 404, "Laporan tidak ditemukan" | 404, "Laporan tidak ditemukan" | Sesuai |
+| TC-V11 | FR-07 | Invalid | Tolak tanpa alasan | 400, "Alasan penolakan wajib diisi" | 400, errors: "Alasan penolakan wajib diisi" | Sesuai |
+| TC-V12 | FR-07 | Invalid | Tolak laporan 3 yang sudah ditolak | 409, laporan sudah diproses | 409, "Laporan sudah diproses (status: Ditolak)" | Sesuai |
+| TC-V13 | FR-07 | Invalid | `GET /api/laporan/menunggu` tanpa token | 401, "Anda harus login terlebih dahulu" | 401, "Anda harus login terlebih dahulu" | Sesuai |
+| TC-V14 | FR-07 | Invalid | `GET /api/laporan/menunggu` dengan token civitas | 403, "Anda tidak punya akses ke fitur ini" | *(isi)* | *(isi)* |
+| TC-V15 | FR-07 | Edge (batas) | Alasan penolakan 256 karakter | 400, "Alasan penolakan maksimal 255 karakter" | *(isi)* | *(isi)* |
+| TC-V16 | FR-07 | Edge (SQL injection) | Alasan penolakan `'; DROP TABLE laporan; --` | 200, alasan tersimpan sebagai teks biasa, tabel tetap ada | *(isi)* | *(isi)* |
+| TC-V17 | FR-07 | Edge (konkurensi) | Dua satpam memverifikasi dua laporan berbeda ke loker yang sama secara bersamaan | Satu 200 dan satu 409, hanya satu baris penempatan | *(isi)* | *(isi)* |
+
 Catatan: query memakai prepared statement (`?`), sehingga input seperti pada TC-08 diperlakukan sebagai data, bukan perintah SQL. Karakter HTML pada TC-11 disimpan apa adanya; pencegahan XSS dilakukan saat data ditampilkan di antarmuka, di luar cakupan tugas ini.
 
 Riwayat perintah terminal pengerjaan dan pengujian terlampir di LMS sebagai bukti pengerjaan.
+
+## 5. Daftar Kontribusi Anggota
+
+| Anggota | Kontribusi |
+|---|---|
+| Faiz Abyakta Santoso | models, routes |
+| Fandy Ahmad Fahrezy | controllers, utils |
+| Muhammad Ghassan Dzul Hannan | validasi, perbaikan code review, dan pengujian |
+| Yazid Dio Alamgir | README dan service |
