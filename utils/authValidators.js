@@ -1,10 +1,13 @@
-const { isFilledString, isWithinMaxLength } = require("./validators");
+const {
+  isFilledString,
+  isWithinMaxLength,
+  noWaPattern,
+} = require("./validators");
 
 const maxNamaLength = 100;
 const minPasswordLength = 8;
 const maxPasswordLength = 72; // batas aman bcrypt
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const noWaPattern = /^\+?[0-9]{8,15}$/;
 
 const getAllowedEmailDomains = () =>
   (process.env.ALLOWED_EMAIL_DOMAINS || "")
