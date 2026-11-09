@@ -4,7 +4,8 @@ const selectFields = `id_laporan AS idLaporan, id_pelapor AS idPengguna,
   jenis_laporan AS jenisLaporan, nama_barang AS namaBarang, kategori,
   deskripsi, lokasi_penitipan AS lokasiPenitipan,
   lokasi_terakhir AS lokasiTerakhir, kontak, tanggal,
-  foto_barang AS fotoBarang, status`;
+  foto_barang AS fotoBarang, status,
+  alasan_penolakan AS alasanPenolakan`;
 
 const insertLaporan = async ({
   idPengguna,
@@ -50,4 +51,40 @@ const findLaporanByPelapor = async (idPengguna) => {
   return rows;
 };
 
-module.exports = { insertLaporan, findLaporanById, findLaporanByPelapor };
+const findLaporanTemuanByStatus = async (status) => {
+  const sql = `SELECT ${selectFields} FROM laporan
+    WHERE jenis_laporan = ? AND status = ?
+    ORDER BY tanggal ASC, id_laporan ASC`;
+  const [rows] = await db.execute(sql, ["temuan", status]);
+  return rows;
+};
+
+// Dipanggil di dalam transaksi: baris dikunci agar dua satpam tidak
+// memproses laporan yang sama pada saat bersamaan.
+const findLaporanForUpdate = async (connection, idLaporan) => {
+  const sql = `SELECT ${selectFields} FROM laporan
+    WHERE id_laporan = ? FOR UPDATE`;
+  const [rows] = await connection.execute(sql, [idLaporan]);
+  return rows[0] ?? null;
+};
+
+const updateStatusLaporan = async (
+  connection,
+  idLaporan,
+  status,
+  alasanPenolakan = null,
+) => {
+  await connection.execute(
+    "UPDATE laporan SET status = ?, alasan_penolakan = ? WHERE id_laporan = ?",
+    [status, alasanPenolakan, idLaporan],
+  );
+};
+
+module.exports = {
+  insertLaporan,
+  findLaporanById,
+  findLaporanByPelapor,
+  findLaporanTemuanByStatus,
+  findLaporanForUpdate,
+  updateStatusLaporan,
+};
