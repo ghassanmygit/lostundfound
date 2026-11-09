@@ -96,7 +96,10 @@ const validateLaporanHilang = (data = {}) => {
   );
   checkDeskripsi(data, errors);
 
-  if (typeof data.kontak !== "string" || !noWaPattern.test(data.kontak.trim())) {
+  if (
+    typeof data.kontak !== "string" ||
+    !noWaPattern.test(data.kontak.trim())
+  ) {
     errors.push("Nomor kontak wajib diisi (8-15 digit, boleh diawali +)");
   }
 
@@ -104,6 +107,7 @@ const validateLaporanHilang = (data = {}) => {
 };
 
 module.exports = {
+  allowedCategories,
   validateLaporanTemuan,
   validateLaporanHilang,
   maxImageSizeBytes,

@@ -22,4 +22,9 @@ const validateTolak = (data = {}) => {
   return [];
 };
 
-module.exports = { validateIdLaporan, validateVerifikasi, validateTolak };
+module.exports = {
+  isPositiveInteger,
+  validateIdLaporan,
+  validateVerifikasi,
+  validateTolak,
+};
