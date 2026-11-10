@@ -23,4 +23,7 @@ const validateKlaim = (data = {}, file) => {
   return { isValid: errors.length === 0, errors };
 };
 
-module.exports = { validateKlaim };
+const validateIdKlaim = (idKlaim) =>
+  isPositiveInteger(idKlaim) ? [] : ["ID klaim tidak valid"];
+
+module.exports = { validateKlaim, validateIdKlaim };
