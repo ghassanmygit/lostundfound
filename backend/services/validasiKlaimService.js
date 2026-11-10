@@ -28,7 +28,7 @@ const getKlaimMenunggu = async (connection, idKlaim) => {
   return klaim;
 };
 
-const getKlaimPending = () => klaimModel.findKlaimPending(statusKlaimPending);
+const getKlaimPending = () => klaimModel.findKlaimByStatus(statusKlaimPending);
 
 const setujuiKlaim = async (idValidator, idKlaimParam) => {
   throwIfInvalid(validateIdKlaim(idKlaimParam));

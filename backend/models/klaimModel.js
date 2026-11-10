@@ -46,9 +46,9 @@ const existsKlaimByStatus = async (idLaporan, idPengklaim, status) => {
   return rows.length > 0;
 };
 
-// Daftar klaim yang menunggu keputusan Satpam, lengkap dengan data untuk
+// Daftar klaim berstatus tertentu (mis. Pending atau Disetujui)
 // mencocokkan barang fisik di loker.
-const findKlaimPending = async (status) => {
+const findKlaimByStatus = async (status) => {
   const sql = `SELECT k.id_klaim AS idKlaim, k.id_laporan AS idLaporan,
     l.nama_barang AS namaBarang, l.deskripsi AS deskripsiBarang,
     l.foto_barang AS fotoBarang, lk.nomor_loker AS nomorLoker,
@@ -102,10 +102,18 @@ const tolakKlaimLain = async (
   );
 };
 
+const updateStatusKlaim = async (connection, idKlaim, status) => {
+  await connection.execute("UPDATE klaim SET status = ? WHERE id_klaim = ?", [
+    status,
+    idKlaim,
+  ]);
+};
+
 module.exports = {
-  findKlaimPending,
+  findKlaimByStatus,
   findKlaimStatus,
   updateKeputusanKlaim,
+  updateStatusKlaim,
   tolakKlaimLain,
   insertKlaim,
   findKlaimById,

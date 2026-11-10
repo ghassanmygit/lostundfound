@@ -24,15 +24,40 @@ const updateStatusLoker = async (connection, idLoker, status) => {
   ]);
 };
 
-const insertPenempatan = async (connection, { idLaporan, idLoker, idSatpam }) => {
+const insertPenempatan = async (
+  connection,
+  { idLaporan, idLoker, idSatpam },
+) => {
   const sql = `INSERT INTO penempatan_loker
     (id_laporan, id_loker, id_satpam, tanggal_masuk)
     VALUES (?, ?, ?, NOW())`;
-  const [result] = await connection.execute(sql, [idLaporan, idLoker, idSatpam]);
+  const [result] = await connection.execute(sql, [
+    idLaporan,
+    idLoker,
+    idSatpam,
+  ]);
   return result.insertId;
 };
 
+// Penempatan yang masih aktif (barang masih di loker) untuk satu laporan.
+const findPenempatanAktifForUpdate = async (connection, idLaporan) => {
+  const sql = `SELECT id_penempatan AS idPenempatan, id_loker AS idLoker
+    FROM penempatan_loker
+    WHERE id_laporan = ? AND tanggal_keluar IS NULL FOR UPDATE`;
+  const [rows] = await connection.execute(sql, [idLaporan]);
+  return rows[0] ?? null;
+};
+
+const tutupPenempatan = async (connection, idPenempatan) => {
+  await connection.execute(
+    "UPDATE penempatan_loker SET tanggal_keluar = NOW() WHERE id_penempatan = ?",
+    [idPenempatan],
+  );
+};
+
 module.exports = {
+  findPenempatanAktifForUpdate,
+  tutupPenempatan,
   findLokerKosong,
   findLokerForUpdate,
   updateStatusLoker,

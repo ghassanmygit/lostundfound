@@ -1,6 +1,7 @@
 const express = require("express");
 const klaimController = require("../controllers/klaimController");
 const validasiKlaimController = require("../controllers/validasiKlaimController");
+const penjemputanController = require("../controllers/penjemputanController");
 const { uploadFotoBukti } = require("../utils/upload");
 const { requireAuth, requireRole } = require("../utils/authMiddleware");
 
@@ -32,6 +33,19 @@ router.post(
   requireAuth,
   requireRole("satpam"),
   validasiKlaimController.tolakKlaim,
+);
+
+router.get(
+  "/disetujui",
+  requireAuth,
+  requireRole("satpam"),
+  penjemputanController.getDaftarPenjemputan,
+);
+router.post(
+  "/:id/serahkan",
+  requireAuth,
+  requireRole("satpam"),
+  penjemputanController.konfirmasiPenjemputan,
 );
 
 module.exports = router;
