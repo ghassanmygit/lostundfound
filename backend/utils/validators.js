@@ -58,6 +58,18 @@ const checkDeskripsi = (data, errors) => {
   }
 };
 
+// Pemeriksaan foto yang dipakai laporan temuan dan klaim.
+const checkFoto = (file, pesanWajib, errors) => {
+  if (!file) {
+    errors.push(pesanWajib);
+    return;
+  }
+  if (!allowedImageTypes.includes(file.mimetype))
+    errors.push("Foto harus berformat JPG atau PNG");
+  if (file.size > maxImageSizeBytes)
+    errors.push(`Ukuran foto maksimal ${maxImageSizeMb} MB`);
+};
+
 const validateLaporanTemuan = (data = {}, file) => {
   const errors = [];
 
@@ -71,14 +83,7 @@ const validateLaporanTemuan = (data = {}, file) => {
   );
   checkDeskripsi(data, errors);
 
-  if (!file) {
-    errors.push("Foto barang wajib diunggah");
-  } else {
-    if (!allowedImageTypes.includes(file.mimetype))
-      errors.push("Foto harus berformat JPG atau PNG");
-    if (file.size > maxImageSizeBytes)
-      errors.push(`Ukuran foto maksimal ${maxImageSizeMb} MB`);
-  }
+  checkFoto(file, "Foto barang wajib diunggah", errors);
 
   return { isValid: errors.length === 0, errors };
 };
@@ -108,6 +113,7 @@ const validateLaporanHilang = (data = {}) => {
 
 module.exports = {
   allowedCategories,
+  checkFoto,
   validateLaporanTemuan,
   validateLaporanHilang,
   maxImageSizeBytes,

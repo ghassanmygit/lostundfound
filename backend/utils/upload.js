@@ -12,9 +12,12 @@ const storage = multer.diskStorage({
   },
 });
 
-const uploadFotoBarang = multer({
-  storage,
-  limits: { fileSize: maxImageSizeBytes },
-}).single("fotoBarang");
+const createUploader = (fieldName) =>
+  multer({ storage, limits: { fileSize: maxImageSizeBytes } }).single(
+    fieldName,
+  );
 
-module.exports = { uploadFotoBarang };
+const uploadFotoBarang = createUploader("fotoBarang");
+const uploadFotoBukti = createUploader("fotoBukti");
+
+module.exports = { uploadFotoBarang, uploadFotoBukti };

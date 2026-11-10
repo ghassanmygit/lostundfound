@@ -5,6 +5,7 @@ const authRoutes = require("./routes/authRoutes");
 const laporanRoutes = require("./routes/laporanRoutes");
 const lokerRoutes = require("./routes/lokerRoutes");
 const katalogRoutes = require("./routes/katalogRoutes");
+const klaimRoutes = require("./routes/klaimRoutes");
 const errorHandler = require("./utils/errorHandler");
 
 const app = express();
@@ -20,6 +21,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/laporan", laporanRoutes);
 app.use("/api/loker", lokerRoutes);
 app.use("/api/katalog", katalogRoutes);
+app.use("/api/klaim", klaimRoutes);
 app.use("/uploads", express.static(path.resolve("uploads")));
 app.use(errorHandler);
 
