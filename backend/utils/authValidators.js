@@ -65,4 +65,14 @@ const validateLogin = (data = {}) => {
   return { isValid: errors.length === 0, errors };
 };
 
-module.exports = { validateRegistrasi, validateLogin };
+const validateKirimUlang = (data = {}) => {
+  const errors = [];
+
+  if (!isFilledString(data.email) || !emailPattern.test(data.email.trim())) {
+    errors.push("Format email tidak valid");
+  }
+
+  return { isValid: errors.length === 0, errors };
+};
+
+module.exports = { validateRegistrasi, validateLogin, validateKirimUlang };

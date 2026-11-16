@@ -9,14 +9,19 @@ const errorHandler = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     const message =
       err.code === "LIMIT_FILE_SIZE"
-  ? `Ukuran foto maksimal ${maxImageSizeMb} MB`
-  : "Unggah file gagal";
+        ? `Ukuran foto maksimal ${maxImageSizeMb} MB`
+        : "Unggah file gagal";
     return res.status(400).json({ success: false, message });
   }
   if (err instanceof AppError) {
     return res
       .status(err.statusCode)
       .json({ success: false, message: err.message, errors: err.details });
+  }
+  if (err.type === "entity.parse.failed") {
+    return res
+      .status(400)
+      .json({ success: false, message: "Format JSON tidak valid" });
   }
   if (err.code === "ER_NO_REFERENCED_ROW_2") {
     return res

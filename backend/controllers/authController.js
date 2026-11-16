@@ -11,7 +11,10 @@ const registrasi = async (req, res) => {
 
 const verifikasiEmail = async (req, res) => {
   await authService.verifikasiEmail(req.query.token);
-  res.json({ success: true, message: "Akun berhasil diaktifkan. Silakan login" });
+  res.json({
+    success: true,
+    message: "Akun berhasil diaktifkan. Silakan login",
+  });
 };
 
 const login = async (req, res) => {
@@ -19,8 +22,23 @@ const login = async (req, res) => {
   res.json({ success: true, message: "Login berhasil", data: hasil });
 };
 
+const kirimUlangVerifikasi = async (req, res) => {
+  await authService.kirimUlangVerifikasi(req.body);
+  res.json({
+    success: true,
+    message:
+      "Jika email terdaftar dan belum aktif, tautan verifikasi baru telah dikirim",
+  });
+};
+
 const profilSaya = (req, res) => {
   res.json({ success: true, data: req.user });
 };
 
-module.exports = { registrasi, verifikasiEmail, login, profilSaya };
+module.exports = {
+  registrasi,
+  verifikasiEmail,
+  kirimUlangVerifikasi,
+  login,
+  profilSaya,
+};

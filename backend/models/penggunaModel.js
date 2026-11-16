@@ -46,9 +46,15 @@ const aktifkanPengguna = async (idPengguna) => {
   await db.execute(sql, [idPengguna]);
 };
 
+const updateTokenVerifikasi = async (idPengguna, tokenVerifikasi) => {
+  const sql = `UPDATE pengguna SET token_verifikasi = ? WHERE id_pengguna = ?`;
+  await db.execute(sql, [tokenVerifikasi, idPengguna]);
+};
+
 module.exports = {
   insertPengguna,
   findPenggunaByEmail,
   findPenggunaByTokenVerifikasi,
   aktifkanPengguna,
+  updateTokenVerifikasi,
 };

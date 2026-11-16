@@ -3,7 +3,11 @@ const crypto = require("crypto");
 const penggunaModel = require("../models/penggunaModel");
 const AppError = require("../utils/appError");
 const { signToken } = require("../utils/token");
-const { validateRegistrasi, validateLogin } = require("../utils/authValidators");
+const {
+  validateRegistrasi,
+  validateLogin,
+  validateKirimUlang,
+} = require("../utils/authValidators");
 
 const roleDefault = "civitas";
 const statusPending = "pending";
@@ -33,16 +37,23 @@ const registrasi = async (data) => {
     tokenVerifikasi,
   });
 
-  // Simulasi pengiriman email: tautan dicetak di terminal server.
-  // Ganti dengan nodemailer saat layanan email tersedia.
-  console.log(`[VERIFIKASI] ${email}: ${buildTautanVerifikasi(tokenVerifikasi)}`);
+  console.log(
+    `[VERIFIKASI] ${email}: ${buildTautanVerifikasi(tokenVerifikasi)}`,
+  );
 
-  return { idPengguna, nama: data.nama.trim(), email, role: roleDefault, statusAkun: statusPending };
+  return {
+    idPengguna,
+    nama: data.nama.trim(),
+    email,
+    role: roleDefault,
+    statusAkun: statusPending,
+  };
 };
 
 const verifikasiEmail = async (tokenVerifikasi) => {
   const tokenValid =
-    typeof tokenVerifikasi === "string" && /^[a-f0-9]{64}$/.test(tokenVerifikasi);
+    typeof tokenVerifikasi === "string" &&
+    /^[a-f0-9]{64}$/.test(tokenVerifikasi);
   const pengguna = tokenValid
     ? await penggunaModel.findPenggunaByTokenVerifikasi(tokenVerifikasi)
     : null;
@@ -66,10 +77,16 @@ const login = async (data) => {
   if (!passwordCocok) throw new AppError("Kredensial tidak valid", 401);
 
   if (pengguna.statusAkun !== statusAktif) {
-    throw new AppError("Akun belum aktif. Verifikasi email Anda terlebih dahulu", 403);
+    throw new AppError(
+      "Akun belum aktif. Verifikasi email Anda terlebih dahulu",
+      403,
+    );
   }
 
-  const token = signToken({ idPengguna: pengguna.idPengguna, role: pengguna.role });
+  const token = signToken({
+    idPengguna: pengguna.idPengguna,
+    role: pengguna.role,
+  });
   return {
     token,
     pengguna: {
@@ -81,4 +98,23 @@ const login = async (data) => {
   };
 };
 
-module.exports = { registrasi, verifikasiEmail, login };
+const kirimUlangVerifikasi = async (data) => {
+  const { isValid, errors } = validateKirimUlang(data);
+  if (!isValid) throw new AppError("Data tidak valid", 400, errors);
+
+  const email = data.email.trim().toLowerCase();
+  const pengguna = await penggunaModel.findPenggunaByEmail(email);
+
+  if (pengguna && pengguna.statusAkun === statusPending) {
+    const tokenVerifikasi = crypto.randomBytes(32).toString("hex");
+    await penggunaModel.updateTokenVerifikasi(
+      pengguna.idPengguna,
+      tokenVerifikasi,
+    );
+    console.log(
+      `[VERIFIKASI] ${email}: ${buildTautanVerifikasi(tokenVerifikasi)}`,
+    );
+  }
+};
+
+module.exports = { registrasi, verifikasiEmail, login, kirimUlangVerifikasi };
