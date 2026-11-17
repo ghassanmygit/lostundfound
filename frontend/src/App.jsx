@@ -1,5 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DetailBarang from "./pages/DetailBarang";
 import KirimUlangVerifikasi from "./pages/KirimUlangVerifikasi";
+import Katalog from "./pages/Katalog";
 import Login from "./pages/Login";
 import Registrasi from "./pages/Registrasi";
 
@@ -14,7 +17,12 @@ function App() {
           path="/kirim-ulang-verifikasi"
           element={<KirimUlangVerifikasi />}
         />
-        <Route path="/katalog" element={<p>Katalog (segera dibuat)</p>} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/katalog" element={<Katalog />} />
+          <Route path="/katalog/:id" element={<DetailBarang />} />
+        </Route>
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

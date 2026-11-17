@@ -18,10 +18,17 @@ export const apiRequest = async (
     headers,
     body: body && !isForm ? JSON.stringify(body) : body,
   });
-  const data = await response.json();
+  let data = {};
+  try {
+    data = await response.json();
+  } catch {
+    // Respons bukan JSON, biasanya backend mati atau port proxy salah.
+  }
 
   if (!response.ok) {
-    const error = new Error(data.message || "Terjadi kesalahan");
+    const error = new Error(
+      data.message || "Server tidak dapat dihubungi. Pastikan backend berjalan",
+    );
     error.status = response.status;
     error.details = data.errors || [];
     throw error;

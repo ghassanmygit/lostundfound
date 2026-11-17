@@ -1,0 +1,74 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(90deg, var(--biru-tua), var(--biru));
+  color: var(--putih);
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 60px;
+}
+
+.navbar-brand {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.navbar-menu {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+}
+
+.navbar-menu a {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.navbar-menu a:hover {
+  text-decoration: none;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.navbar-menu a.active {
+  color: var(--biru-tua);
+  background: var(--kuning);
+}
+
+.navbar-keluar {
+  padding: 6px 16px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--putih);
+  background: transparent;
+  cursor: pointer;
+}
+
+.navbar-keluar:hover {
+  background: rgb(255 255 255 / 0.15);
+}
