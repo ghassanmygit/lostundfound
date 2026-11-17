@@ -1,0 +1,157 @@
+.auth {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--biru) 0%, var(--biru-tua) 100%);
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px 24px 52px;
+  text-align: center;
+  color: var(--putih);
+}
+
+.auth-brand svg {
+  width: 84px;
+  height: 84px;
+}
+
+.auth-brand h2 {
+  margin: 4px 0 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.auth-univ {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.auth-brand ul {
+  display: none;
+}
+
+.auth-panel {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 28px 24px 32px;
+  background: var(--putih);
+  border-radius: var(--radius-besar) var(--radius-besar) 0 0;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-form h1 {
+  margin: 0 0 4px;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--biru);
+}
+
+.auth-form .sub {
+  margin: 0 0 24px;
+  font-size: 0.85rem;
+  color: var(--teks-redup);
+}
+
+.auth-links {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.auth-switch {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--teks-redup);
+}
+
+.footer {
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.8);
+  background: var(--biru-tua);
+}
+
+.footer p {
+  margin: 2px 0;
+}
+
+@media (min-width: 900px) {
+  .auth-body {
+    flex-direction: row;
+    background: var(--putih);
+  }
+
+  .auth-brand {
+    flex: 1;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 8px;
+    padding: 64px;
+    text-align: left;
+    background: linear-gradient(160deg, var(--biru) 0%, var(--biru-tua) 100%);
+  }
+
+  .auth-brand svg {
+    width: 120px;
+    height: 120px;
+  }
+
+  .auth-brand h2 {
+    font-size: 2.4rem;
+  }
+
+  .auth-univ {
+    font-size: 1rem;
+  }
+
+  .auth-brand ul {
+    display: block;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.95rem;
+  }
+
+  .auth-brand li {
+    margin-bottom: 12px;
+    padding-left: 22px;
+    position: relative;
+  }
+
+  .auth-brand li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--kuning);
+  }
+
+  .auth-panel {
+    flex: 1;
+    align-items: center;
+    padding: 48px;
+    border-radius: 0;
+  }
+}

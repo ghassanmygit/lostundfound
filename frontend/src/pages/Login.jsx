@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiRequest, saveToken } from "../api/client";
-import "./Login.css";
+import Alert from "../components/Alert";
+import AuthLayout from "../components/AuthLayout";
+import FormField from "../components/FormField";
 
 function Login() {
   const navigate = useNavigate();
@@ -29,101 +31,49 @@ function Login() {
   };
 
   return (
-    <main className="login">
-      <div className="login-hero" aria-hidden="true">
-        <svg
-          viewBox="0 0 120 120"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="52" cy="52" r="30" />
-          <path d="M74 74l26 26" />
-          <path d="M38 52h28M52 38v28" stroke="var(--kuning)" />
-        </svg>
-      </div>
-
-      <section className="login-card">
-        <h1>Masuk</h1>
-        <p className="sub">Lost &amp; Found UIN Jakarta</p>
-
-        <form onSubmit={handleSubmit} noValidate>
-          {error && (
-            <p className="alert-error" role="alert">
-              {error}{" "}
-              {error.includes("belum aktif") && (
-                <Link to="/kirim-ulang-verifikasi">Kirim ulang tautan</Link>
-              )}
-            </p>
+    <AuthLayout title="Masuk" subtitle="Lost & Found UIN Jakarta">
+      <form onSubmit={handleSubmit} noValidate>
+        <Alert message={error}>
+          {error.includes("belum aktif") && (
+            <Link to="/kirim-ulang-verifikasi">Kirim ulang tautan</Link>
           )}
+        </Alert>
 
-          <div className="field">
-            <label htmlFor="email">Email Kampus</label>
-            <div className="input-wrap">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="5" width="18" height="14" rx="3" />
-                <path d="M4 8l8 6 8-6" />
-              </svg>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="nama@mhs.uinjkt.ac.id"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+        <FormField
+          id="email"
+          label="Email Kampus"
+          icon="mail"
+          type="email"
+          autoComplete="email"
+          placeholder="Email resmi kampus"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <FormField
+          id="password"
+          label="Kata Sandi"
+          icon="lock"
+          type="password"
+          autoComplete="current-password"
+          placeholder="Masukkan kata sandi"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
 
-          <div className="field">
-            <label htmlFor="password">Kata Sandi</label>
-            <div className="input-wrap">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="5" y="11" width="14" height="9" rx="3" />
-                <path d="M8 11V8a4 4 0 018 0v3" />
-              </svg>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Masukkan kata sandi"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+        <button className="btn" type="submit" disabled={loading}>
+          {loading ? "Memproses..." : "Masuk"}
+        </button>
+      </form>
 
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? "Memproses..." : "Masuk"}
-          </button>
-        </form>
-
-        <p className="login-links">
-          <Link to="/kirim-ulang-verifikasi">
-            Kirim ulang tautan verifikasi
-          </Link>
-        </p>
-        <p className="login-daftar">
-          Belum punya akun? <Link to="/registrasi">Daftar</Link>
-        </p>
-      </section>
-    </main>
+      <p className="auth-links">
+        <Link to="/kirim-ulang-verifikasi">Kirim ulang tautan verifikasi</Link>
+      </p>
+      <p className="auth-switch">
+        Belum punya akun? <Link to="/registrasi">Daftar</Link>
+      </p>
+    </AuthLayout>
   );
 }
 

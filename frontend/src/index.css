@@ -117,3 +117,34 @@ a:hover {
   color: var(--bahaya);
   background: #fdecea;
 }
+
+.field-hint {
+  padding-left: 14px;
+  font-size: 0.75rem;
+  color: var(--teks-redup);
+}
+
+.alert-error ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.alert-ok {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #1b6b3a;
+  background: #e6f6ec;
+}
+
+.btn-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--putih);
+}
+
+.btn-link:hover {
+  text-decoration: none;
+}
