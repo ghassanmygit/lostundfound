@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RoleRoute from "./components/RoleRoute";
+import DashboardSatpam from "./pages/DashboardSatpam";
 import DetailBarang from "./pages/DetailBarang";
 import KirimUlangVerifikasi from "./pages/KirimUlangVerifikasi";
 import Katalog from "./pages/Katalog";
@@ -21,6 +23,10 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/katalog" element={<Katalog />} />
           <Route path="/katalog/:id" element={<DetailBarang />} />
+
+          <Route element={<RoleRoute role="satpam" />}>
+            <Route path="/satpam" element={<DashboardSatpam />} />
+          </Route>
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,8 +1,10 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { clearToken } from "../api/client";
+import { getSession } from "../utils/auth";
 
 function Navbar() {
   const navigate = useNavigate();
+  const session = getSession();
 
   const handleKeluar = () => {
     clearToken();
@@ -14,6 +16,9 @@ function Navbar() {
       <div className="navbar-inner">
         <span className="navbar-brand">Lost &amp; Found</span>
         <nav className="navbar-menu">
+          {session?.role === "satpam" && (
+            <NavLink to="/satpam">Verifikasi</NavLink>
+          )}
           <NavLink to="/katalog">Katalog</NavLink>
         </nav>
         <button type="button" className="navbar-keluar" onClick={handleKeluar}>

@@ -22,7 +22,7 @@ function Login() {
         body: { email, password },
       });
       saveToken(res.data.token);
-      navigate("/katalog");
+      navigate(res.data.pengguna.role === "satpam" ? "/satpam" : "/katalog");
     } catch (err) {
       setError(err.message);
     } finally {

@@ -249,3 +249,26 @@
     padding: 32px;
   }
 }
+
+.kartu,
+.detail-isi {
+  min-width: 0;
+}
+
+.kartu-isi h3,
+.kartu-isi p,
+.detail-isi h1,
+.deskripsi,
+.detail dd {
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 800px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
