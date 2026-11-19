@@ -148,3 +148,40 @@ a:hover {
 .btn-link:hover {
   text-decoration: none;
 }
+
+.control {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-input);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--teks);
+  background: var(--biru-muda);
+}
+
+.control:focus {
+  outline: 0;
+  border-color: var(--biru);
+}
+
+.control::placeholder {
+  color: #7f95b8;
+}
+
+select.control {
+  height: 52px;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: 44px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231f4e9c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 18px center;
+  cursor: pointer;
+}
+
+textarea.control {
+  min-height: 96px;
+  resize: vertical;
+}

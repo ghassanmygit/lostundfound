@@ -5,6 +5,8 @@ import DashboardSatpam from "./pages/DashboardSatpam";
 import DetailBarang from "./pages/DetailBarang";
 import KirimUlangVerifikasi from "./pages/KirimUlangVerifikasi";
 import Katalog from "./pages/Katalog";
+import LaporBarang from "./pages/LaporBarang";
+import LaporanSaya from "./pages/LaporanSaya";
 import Login from "./pages/Login";
 import Registrasi from "./pages/Registrasi";
 
@@ -23,6 +25,8 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/katalog" element={<Katalog />} />
           <Route path="/katalog/:id" element={<DetailBarang />} />
+          <Route path="/lapor" element={<LaporBarang />} />
+          <Route path="/laporan-saya" element={<LaporanSaya />} />
 
           <Route element={<RoleRoute role="satpam" />}>
             <Route path="/satpam" element={<DashboardSatpam />} />

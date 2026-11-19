@@ -23,6 +23,8 @@ function Navbar() {
             <NavLink to="/satpam">Verifikasi</NavLink>
           )}
           <NavLink to="/katalog">Katalog</NavLink>
+          <NavLink to="/lapor">Lapor</NavLink>
+          <NavLink to="/laporan-saya">Laporan Saya</NavLink>
         </nav>
         <button type="button" className="navbar-keluar" onClick={handleKeluar}>
           Keluar

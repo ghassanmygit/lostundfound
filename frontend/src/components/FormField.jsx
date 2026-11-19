@@ -17,6 +17,18 @@ const icons = {
       <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
     </>
   ),
+  tag: (
+    <>
+      <path d="M3 12V4h8l9 9-8 8z" />
+      <circle cx="7.5" cy="8.5" r="1" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M12 21s7-6.2 7-11.5a7 7 0 10-14 0C5 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </>
+  ),
   phone: (
     <>
       <rect x="7" y="3" width="10" height="18" rx="3" />
