@@ -1,9 +1,16 @@
+import { useState } from "react";
 import Footer from "./Footer";
 import "./AuthLayout.css";
 
-function AuthLayout({ title, subtitle, children }) {
+// lipat: di layar kecil, kartu awalnya tertutup dan terbuka saat diketuk.
+function AuthLayout({ title, subtitle, lipat = false, children }) {
+  const [terbuka, setTerbuka] = useState(!lipat);
+  const kelas = ["auth", lipat && "auth--lipat", terbuka && "is-open"]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="auth">
+    <div className={kelas}>
       <div className="auth-body">
         <aside className="auth-brand">
           <img
@@ -22,9 +29,34 @@ function AuthLayout({ title, subtitle, children }) {
 
         <main className="auth-panel">
           <div className="auth-form">
-            <h1>{title}</h1>
-            <p className="sub">{subtitle}</p>
-            {children}
+            <div className="auth-head">
+              <h1>{title}</h1>
+              <p className="sub">{subtitle}</p>
+              {lipat && (
+                <button
+                  type="button"
+                  className="auth-toggle"
+                  aria-expanded={terbuka}
+                  aria-controls="auth-isi"
+                  aria-label={terbuka ? "Tutup form" : "Buka form"}
+                  onClick={() => setTerbuka(!terbuka)}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M6 15l6-6 6 6" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <div className="auth-isi" id="auth-isi">
+              <div className="auth-isi-inner">{children}</div>
+            </div>
           </div>
         </main>
       </div>

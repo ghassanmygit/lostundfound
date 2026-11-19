@@ -31,7 +31,7 @@ function Login() {
   };
 
   return (
-    <AuthLayout title="Masuk" subtitle="Lost & Found UIN Jakarta">
+    <AuthLayout lipat title="Masuk" subtitle="Lost & Found UIN Jakarta">
       <form onSubmit={handleSubmit} noValidate>
         <Alert message={error}>
           {error.includes("belum aktif") && (

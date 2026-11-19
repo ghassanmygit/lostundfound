@@ -155,3 +155,105 @@
     border-radius: 0;
   }
 }
+
+.auth-head {
+  position: relative;
+}
+
+.auth-toggle {
+  display: none;
+}
+
+/* Kartu lipat: hanya di layar kecil. Di desktop selalu terbuka. */
+@media (max-width: 899px) {
+  .auth--lipat .auth-brand {
+    flex: 1;
+    justify-content: center;
+    padding-bottom: 28px;
+  }
+
+  .auth--lipat .auth-panel {
+    flex: none;
+  }
+
+  .auth--lipat .auth-logo {
+    width: 120px;
+    height: 120px;
+    transition:
+      width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+      height 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .auth--lipat.is-open .auth-logo {
+    width: 84px;
+    height: 84px;
+  }
+
+  .auth--lipat .auth-head .sub {
+    transition: margin-bottom 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .auth--lipat:not(.is-open) .auth-head .sub {
+    margin-bottom: 0;
+  }
+
+  .auth--lipat .auth-toggle {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .auth--lipat .auth-toggle:focus-visible {
+    outline: 2px solid var(--biru);
+    outline-offset: -2px;
+    border-radius: 16px;
+  }
+
+  .auth--lipat .auth-toggle svg {
+    position: absolute;
+    top: 10px;
+    right: 2px;
+    width: 26px;
+    height: 26px;
+    stroke: var(--biru);
+    transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .auth--lipat.is-open .auth-toggle svg {
+    transform: rotate(180deg);
+  }
+
+  .auth--lipat .auth-isi {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition:
+      grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s linear 0.45s;
+  }
+
+  .auth--lipat.is-open .auth-isi {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition:
+      grid-template-rows 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+      visibility 0s;
+  }
+
+  .auth--lipat .auth-isi-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth *,
+  .auth *::before,
+  .auth *::after {
+    transition: none !important;
+  }
+}
