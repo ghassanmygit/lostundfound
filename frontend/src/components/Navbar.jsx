@@ -14,7 +14,10 @@ function Navbar() {
   return (
     <header className="navbar">
       <div className="navbar-inner">
-        <span className="navbar-brand">Lost &amp; Found</span>
+        <span className="navbar-brand">
+          <img className="navbar-logo" src="/logo.png" alt="" />
+          Lost &amp; Found
+        </span>
         <nav className="navbar-menu">
           {session?.role === "satpam" && (
             <NavLink to="/satpam">Verifikasi</NavLink>

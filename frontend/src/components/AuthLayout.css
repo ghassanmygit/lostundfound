@@ -21,9 +21,9 @@
   color: var(--putih);
 }
 
-.auth-brand svg {
-  width: 84px;
-  height: 84px;
+.auth-logo {
+  width: 96px;
+  height: 96px;
 }
 
 .auth-brand h2 {
@@ -110,9 +110,9 @@
     background: linear-gradient(160deg, var(--biru) 0%, var(--biru-tua) 100%);
   }
 
-  .auth-brand svg {
-    width: 120px;
-    height: 120px;
+  .auth-logo {
+    width: 96px;
+    height: 96px;
   }
 
   .auth-brand h2 {
