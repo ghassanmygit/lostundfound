@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { apiRequest } from "../api/client";
 import { kategoriList } from "../utils/format";
+import { cekFoto } from "../utils/foto";
 import Alert from "./Alert";
 import FormField from "./FormField";
+import FotoField from "./FotoField";
 import SelectField from "./SelectField";
 import TextareaField from "./TextareaField";
 
@@ -16,6 +18,7 @@ function FormLaporHilang({ onBerhasil }) {
     lokasiTerakhir: "",
     kontak: "",
   });
+  const [foto, setFoto] = useState(null);
   const [error, setError] = useState(tanpaError);
   const [loading, setLoading] = useState(false);
 
@@ -24,9 +27,25 @@ function FormLaporHilang({ onBerhasil }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(tanpaError);
+
+    // Foto bersifat opsional: tidak semua pemilik punya foto barangnya.
+    const pesanFoto = foto ? cekFoto(foto) : "";
+    if (pesanFoto) {
+      setError({ message: pesanFoto, details: [] });
+      return;
+    }
+
+    const body = new FormData();
+    Object.entries(form).forEach(([key, value]) => body.append(key, value));
+    if (foto) body.append("fotoBarang", foto);
+
     setLoading(true);
     try {
-      await apiRequest("/laporan/hilang", { method: "POST", body: form });
+      await apiRequest("/laporan/hilang", {
+        method: "POST",
+        body,
+        isForm: true,
+      });
       onBerhasil("Laporan barang hilang berhasil dibuat.");
     } catch (err) {
       setError({ message: err.message, details: err.details });
@@ -93,6 +112,12 @@ function FormLaporHilang({ onBerhasil }) {
         value={form.kontak}
         onChange={setField("kontak")}
         required
+      />
+      <FotoField
+        id="fotoBarang"
+        label="Foto Barang (opsional)"
+        file={foto}
+        onChange={setFoto}
       />
 
       <button className="btn" type="submit" disabled={loading}>

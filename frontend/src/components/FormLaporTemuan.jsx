@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { apiRequest } from "../api/client";
 import { kategoriList } from "../utils/format";
+import { cekFoto } from "../utils/foto";
 import Alert from "./Alert";
 import FormField from "./FormField";
 import FotoField from "./FotoField";
@@ -8,8 +9,6 @@ import SelectField from "./SelectField";
 import TextareaField from "./TextareaField";
 
 const tanpaError = { message: "", details: [] };
-const tipeFoto = ["image/jpeg", "image/png"];
-const maksFotoMb = 5;
 
 function FormLaporTemuan({ onBerhasil }) {
   const [form, setForm] = useState({
@@ -32,15 +31,9 @@ function FormLaporTemuan({ onBerhasil }) {
       setError({ message: "Foto barang wajib diunggah", details: [] });
       return;
     }
-    if (!tipeFoto.includes(foto.type)) {
-      setError({ message: "Foto harus berformat JPG atau PNG", details: [] });
-      return;
-    }
-    if (foto.size > maksFotoMb * 1024 * 1024) {
-      setError({
-        message: `Ukuran foto maksimal ${maksFotoMb} MB`,
-        details: [],
-      });
+    const pesanFoto = cekFoto(foto);
+    if (pesanFoto) {
+      setError({ message: pesanFoto, details: [] });
       return;
     }
 
