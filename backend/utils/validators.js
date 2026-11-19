@@ -88,7 +88,7 @@ const validateLaporanTemuan = (data = {}, file) => {
   return { isValid: errors.length === 0, errors };
 };
 
-const validateLaporanHilang = (data = {}) => {
+const validateLaporanHilang = (data = {}, file) => {
   const errors = [];
 
   checkNamaBarang(data, errors);
@@ -107,6 +107,8 @@ const validateLaporanHilang = (data = {}) => {
   ) {
     errors.push("Nomor kontak wajib diisi (8-15 digit, boleh diawali +)");
   }
+
+  if (file) checkFoto(file, "", errors);
 
   return { isValid: errors.length === 0, errors };
 };

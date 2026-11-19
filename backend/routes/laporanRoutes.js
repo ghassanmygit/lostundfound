@@ -16,6 +16,7 @@ router.post(
   "/hilang",
   requireAuth,
   requireRole("civitas"),
+  uploadFotoBarang,
   laporanController.createLaporanHilang,
 );
 router.get("/saya", requireAuth, laporanController.getLaporanSaya);

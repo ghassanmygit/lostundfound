@@ -31,8 +31,8 @@ const createLaporanTemuan = async (idPengguna, data, file) => {
   return laporanModel.findLaporanById(idLaporan);
 };
 
-const createLaporanHilang = async (idPengguna, data) => {
-  const { isValid, errors } = validateLaporanHilang(data);
+const createLaporanHilang = async (idPengguna, data, file) => {
+  const { isValid, errors } = validateLaporanHilang(data, file);
   if (!isValid) throw new AppError("Validasi gagal", 400, errors);
 
   const idLaporan = await laporanModel.insertLaporan({
@@ -43,6 +43,7 @@ const createLaporanHilang = async (idPengguna, data) => {
     deskripsi: trimOrNull(data.deskripsi),
     lokasiTerakhir: data.lokasiTerakhir.trim(),
     kontak: data.kontak.trim(),
+    fotoBarang: file ? file.filename : null,
     status: statusHilangAwal,
   });
 

@@ -17,6 +17,7 @@ const createLaporanHilang = async (req, res) => {
   const laporan = await laporanService.createLaporanHilang(
     req.user.idPengguna,
     req.body,
+    req.file,
   );
   res.status(201).json({
     success: true,
