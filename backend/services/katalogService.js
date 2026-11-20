@@ -42,6 +42,7 @@ const getDetailKatalog = async (idLaporanParam, jenis = "temuan") => {
         : "Barang tidak ditemukan di katalog";
     throw new AppError(pesan, 404);
   }
+  return barang;
 };
 
 module.exports = { getKatalog, getDetailKatalog };
