@@ -10,4 +10,19 @@ const getDetailKatalog = async (req, res) => {
   res.json({ success: true, data: barang });
 };
 
-module.exports = { getKatalog, getDetailKatalog };
+const getKatalogHilang = async (req, res) => {
+  const { data, meta } = await katalogService.getKatalog(req.query, "hilang");
+  res.json({ success: true, data, meta });
+};
+
+const getDetailKatalogHilang = async (req, res) => {
+  const barang = await katalogService.getDetailKatalog(req.params.id, "hilang");
+  res.json({ success: true, data: barang });
+};
+
+module.exports = {
+  getKatalog,
+  getDetailKatalog,
+  getKatalogHilang,
+  getDetailKatalogHilang,
+};

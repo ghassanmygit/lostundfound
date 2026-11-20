@@ -5,13 +5,16 @@ const { validateIdLaporan } = require("../utils/verifikasiValidators");
 
 // Hanya barang yang sudah diverifikasi Satpam yang tampil di katalog.
 const statusTersedia = "Tersedia";
+// Laporan hilang tampil selama pemiliknya masih mencari.
+const statusDicari = "Dicari";
+const statusKatalog = { temuan: statusTersedia, hilang: statusDicari };
 
-const getKatalog = async (query) => {
+const getKatalog = async (query, jenis = "temuan") => {
   const { errors, filters } = validateKatalogQuery(query);
   if (errors.length > 0) throw new AppError("Validasi gagal", 400, errors);
 
   const { halaman, batas, cari, kategori } = filters;
-  const kriteria = { status: statusTersedia, cari, kategori };
+  const kriteria = { jenis, status: statusKatalog[jenis], cari, kategori };
   const [data, total] = await Promise.all([
     katalogModel.findKatalog(kriteria, batas, (halaman - 1) * batas),
     katalogModel.countKatalog(kriteria),
@@ -23,16 +26,22 @@ const getKatalog = async (query) => {
   };
 };
 
-const getDetailKatalog = async (idLaporanParam) => {
+const getDetailKatalog = async (idLaporanParam, jenis = "temuan") => {
   const errors = validateIdLaporan(idLaporanParam);
   if (errors.length > 0) throw new AppError("Validasi gagal", 400, errors);
 
   const barang = await katalogModel.findKatalogById(
     Number(idLaporanParam),
-    statusTersedia,
+    jenis,
+    statusKatalog[jenis],
   );
-  if (!barang) throw new AppError("Barang tidak ditemukan di katalog", 404);
-  return barang;
+  if (!barang) {
+    const pesan =
+      jenis === "hilang"
+        ? "Barang hilang tidak ditemukan"
+        : "Barang tidak ditemukan di katalog";
+    throw new AppError(pesan, 404);
+  }
 };
 
 module.exports = { getKatalog, getDetailKatalog };

@@ -1,13 +1,16 @@
 const db = require("../utils/db");
 
 // Hanya kolom yang aman ditampilkan ke publik (tanpa data pelapor).
-const publicFields = `id_laporan AS idLaporan, nama_barang AS namaBarang,
-  kategori, deskripsi, lokasi_penitipan AS lokasiPenitipan, tanggal,
-  foto_barang AS fotoBarang`;
+const kolomUmum = `id_laporan AS idLaporan, nama_barang AS namaBarang,
+  kategori, deskripsi, tanggal, foto_barang AS fotoBarang`;
+const publicFields = {
+  temuan: `${kolomUmum}, lokasi_penitipan AS lokasiPenitipan`,
+  hilang: `${kolomUmum}, lokasi_terakhir AS lokasiTerakhir`,
+};
 
-const buildWhere = ({ status, cari, kategori }) => {
+const buildWhere = ({ jenis, status, cari, kategori }) => {
   const conditions = ["jenis_laporan = ?", "status = ?"];
-  const params = ["temuan", status];
+  const params = [jenis, status];
 
   if (kategori) {
     conditions.push("kategori = ?");
@@ -39,10 +42,10 @@ const countKatalog = async (kriteria) => {
   return rows[0].total;
 };
 
-const findKatalogById = async (idLaporan, status) => {
-  const sql = `SELECT ${publicFields} FROM laporan
+const findKatalogById = async (idLaporan, jenis, status) => {
+  const sql = `SELECT ${publicFields[jenis]} FROM laporan
     WHERE id_laporan = ? AND jenis_laporan = ? AND status = ?`;
-  const [rows] = await db.execute(sql, [idLaporan, "temuan", status]);
+  const [rows] = await db.execute(sql, [idLaporan, jenis, status]);
   return rows[0] ?? null;
 };
 
