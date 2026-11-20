@@ -5,7 +5,7 @@
 
 .lap {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   border-radius: 22px;
   background: var(--putih);
@@ -14,6 +14,7 @@
 
 .lap-foto {
   position: relative;
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,12 +24,16 @@
   background: var(--biru-muda);
 }
 
+.lap-foto:not(:has(img)) {
+  display: none;
+}
+
 .lap-foto img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .lap-isi {
@@ -109,5 +114,13 @@
 @media (min-width: 700px) {
   .lap {
     grid-template-columns: 140px minmax(0, 1fr);
+  }
+
+  .lap-foto {
+    height: auto;
+  }
+
+  .lap-foto:not(:has(img)) {
+    display: flex;
   }
 }

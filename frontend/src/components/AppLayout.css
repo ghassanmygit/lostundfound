@@ -82,38 +82,44 @@
 }
 
 /* Layar kecil: menu pindah ke bar bawah. */
+/* Footer disembunyikan di halaman dalam aplikasi. */
+.app .footer {
+  display: none;
+}
+
+/* Layar kecil: menu turun ke baris kedua, tetap di atas. */
 @media (max-width: 699px) {
   .navbar-inner {
-    justify-content: space-between;
-  }
-
-  .navbar-menu {
-    position: fixed;
-    right: 12px;
-    bottom: 12px;
-    left: 12px;
-    z-index: 20;
-    justify-content: space-around;
-    gap: 2px;
-    padding: 6px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--biru-tua), var(--biru));
-    box-shadow: 0 8px 24px rgb(22 55 110 / 0.35);
-  }
-
-  .navbar-menu a {
-    flex: 1;
-    padding: 10px 4px;
-    text-align: center;
-    font-size: 0.78rem;
-    white-space: nowrap;
+    flex-wrap: wrap;
+    gap: 0 12px;
+    height: auto;
+    padding: 10px 16px 8px;
   }
 
   .navbar-brand {
     flex: 1;
+    font-size: 1rem;
   }
 
-  .app .footer {
-    padding-bottom: 88px;
+  .navbar-menu {
+    order: 3;
+    flex: 0 0 100%;
+    justify-content: space-between;
+    gap: 4px;
+    margin-top: 8px;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+
+  .navbar-menu a {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+}
+
+.app .footer {
+  display: none;
 }
