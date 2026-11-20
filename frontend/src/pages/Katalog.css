@@ -272,3 +272,13 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+.catatan {
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--biru-muda);
+  color: var(--biru-tua);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}

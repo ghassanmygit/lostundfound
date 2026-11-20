@@ -23,8 +23,16 @@ function App() {
         />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/katalog" element={<Katalog />} />
+          <Route path="/katalog" element={<Katalog key="temuan" />} />
           <Route path="/katalog/:id" element={<DetailBarang />} />
+          <Route
+            path="/hilang"
+            element={<Katalog key="hilang" jenis="hilang" />}
+          />
+          <Route
+            path="/hilang/:id"
+            element={<DetailBarang key="hilang" jenis="hilang" />}
+          />
           <Route path="/lapor" element={<LaporBarang />} />
           <Route path="/laporan-saya" element={<LaporanSaya />} />
 

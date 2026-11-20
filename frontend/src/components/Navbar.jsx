@@ -22,7 +22,8 @@ function Navbar() {
           {session?.role === "satpam" && (
             <NavLink to="/satpam">Verifikasi</NavLink>
           )}
-          <NavLink to="/katalog">Katalog</NavLink>
+          <NavLink to="/katalog">Temuan</NavLink>
+          <NavLink to="/hilang">Hilang</NavLink>
           <NavLink to="/lapor">Lapor</NavLink>
           <NavLink to="/laporan-saya">Laporan Saya</NavLink>
         </nav>

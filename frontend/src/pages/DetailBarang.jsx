@@ -5,7 +5,23 @@ import Alert from "../components/Alert";
 import { formatTanggal, urlFoto } from "../utils/format";
 import "./Katalog.css";
 
-function DetailBarang() {
+const teks = {
+  temuan: {
+    api: "/katalog",
+    kembali: "/katalog",
+    lokasi: "Lokasi penitipan",
+    tanggal: "Tanggal ditemukan",
+  },
+  hilang: {
+    api: "/katalog/hilang",
+    kembali: "/hilang",
+    lokasi: "Lokasi terakhir terlihat",
+    tanggal: "Tanggal hilang",
+  },
+};
+
+function DetailBarang({ jenis = "temuan" }) {
+  const t = teks[jenis];
   const { id } = useParams();
   const navigate = useNavigate();
   const [barang, setBarang] = useState(null);
@@ -15,7 +31,7 @@ function DetailBarang() {
     let batal = false;
     setBarang(null);
     setError({ message: "", details: [] });
-    apiRequest(`/katalog/${id}`)
+    apiRequest(`${t.api}/${id}`)
       .then((res) => {
         if (!batal) setBarang(res.data);
       })
@@ -31,14 +47,14 @@ function DetailBarang() {
     return () => {
       batal = true;
     };
-  }, [id, navigate]);
+  }, [t.api, id, navigate]);
 
   const foto = barang && urlFoto(barang.fotoBarang);
 
   return (
     <section>
-      <Link to="/katalog" className="kembali">
-        &larr; Kembali ke katalog
+      <Link to={t.kembali} className="kembali">
+        &larr; Kembali ke daftar
       </Link>
 
       <Alert message={error.message} details={error.details} />
@@ -58,11 +74,17 @@ function DetailBarang() {
             <h1>{barang.namaBarang}</h1>
             <p className="deskripsi">{barang.deskripsi}</p>
             <dl>
-              <dt>Lokasi penitipan</dt>
-              <dd>{barang.lokasiPenitipan}</dd>
-              <dt>Tanggal ditemukan</dt>
+              <dt>{t.lokasi}</dt>
+              <dd>{barang.lokasiPenitipan ?? barang.lokasiTerakhir}</dd>
+              <dt>{t.tanggal}</dt>
               <dd>{formatTanggal(barang.tanggal)}</dd>
             </dl>
+            {jenis === "hilang" && (
+              <p className="catatan">
+                Merasa menemukan barang ini? Serahkan ke pos satpam atau buat
+                laporan temuan lewat menu Lapor.
+              </p>
+            )}
           </div>
         </article>
       )}

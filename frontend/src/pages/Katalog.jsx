@@ -6,7 +6,21 @@ import KartuBarang from "../components/KartuBarang";
 import { kategoriList } from "../utils/format";
 import "./Katalog.css";
 
-function Katalog() {
+const teks = {
+  temuan: {
+    api: "/katalog",
+    judul: "Barang Temuan",
+    sub: (n) => `${n} barang menunggu pemiliknya`,
+  },
+  hilang: {
+    api: "/katalog/hilang",
+    judul: "Barang Hilang",
+    sub: (n) => `${n} barang sedang dicari pemiliknya`,
+  },
+};
+
+function Katalog({ jenis = "temuan" }) {
+  const t = teks[jenis];
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const cari = params.get("cari") ?? "";
@@ -26,7 +40,7 @@ function Katalog() {
 
     setLoading(true);
     setError("");
-    apiRequest(`/katalog?${query}`)
+    apiRequest(`${t.api}?${query}`)
       .then((res) => {
         if (!batal) setHasil({ data: res.data, meta: res.meta });
       })
@@ -46,7 +60,7 @@ function Katalog() {
     return () => {
       batal = true;
     };
-  }, [cari, kategori, halaman, navigate]);
+  }, [t.api, cari, kategori, halaman, navigate]);
 
   const ubahFilter = (perubahan) => {
     const next = new URLSearchParams(params);
@@ -66,10 +80,8 @@ function Katalog() {
 
   return (
     <section>
-      <h1 className="judul">Barang Temuan</h1>
-      <p className="judul-sub">
-        {meta ? `${meta.total} barang menunggu pemiliknya` : "Memuat..."}
-      </p>
+      <h1 className="judul">{t.judul}</h1>
+      <p className="judul-sub">{meta ? t.sub(meta.total) : "Memuat..."}</p>
 
       <form className="filter" onSubmit={handleCari}>
         <input
@@ -104,7 +116,7 @@ function Katalog() {
 
       <div className={`grid ${loading ? "memuat" : ""}`}>
         {data.map((barang) => (
-          <KartuBarang key={barang.idLaporan} barang={barang} />
+          <KartuBarang key={barang.idLaporan} barang={barang} jenis={jenis} />
         ))}
       </div>
 
