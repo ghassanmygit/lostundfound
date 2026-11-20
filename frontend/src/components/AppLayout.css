@@ -81,12 +81,6 @@
   background: rgb(255 255 255 / 0.15);
 }
 
-/* Layar kecil: menu pindah ke bar bawah. */
-/* Footer disembunyikan di halaman dalam aplikasi. */
-.app .footer {
-  display: none;
-}
-
 /* Layar kecil: menu turun ke baris kedua, tetap di atas. */
 @media (max-width: 699px) {
   .navbar-inner {
@@ -118,8 +112,4 @@
     font-size: 0.8rem;
     white-space: nowrap;
   }
-}
-
-.app .footer {
-  display: none;
 }
