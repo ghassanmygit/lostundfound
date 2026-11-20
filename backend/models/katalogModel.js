@@ -1,6 +1,7 @@
 const db = require("../utils/db");
 
 // Hanya kolom yang aman ditampilkan ke publik (tanpa data pelapor).
+// Laporan hilang tidak pernah menampilkan kontak pelapor.
 const kolomUmum = `id_laporan AS idLaporan, nama_barang AS namaBarang,
   kategori, deskripsi, tanggal, foto_barang AS fotoBarang`;
 const publicFields = {
@@ -29,7 +30,7 @@ const buildWhere = ({ jenis, status, cari, kategori }) => {
 
 const findKatalog = async (kriteria, limit, offset) => {
   const { where, params } = buildWhere(kriteria);
-  const sql = `SELECT ${publicFields} FROM laporan WHERE ${where}
+  const sql = `SELECT ${publicFields[kriteria.jenis]} FROM laporan WHERE ${where}
     ORDER BY tanggal DESC, id_laporan DESC LIMIT ? OFFSET ?`;
   const [rows] = await db.query(sql, [...params, limit, offset]);
   return rows;
