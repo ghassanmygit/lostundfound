@@ -13,6 +13,8 @@ function LaporanSaya() {
   const { state } = useLocation();
   const [daftar, setDaftar] = useState(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [prosesId, setProsesId] = useState(null);
 
   // Pesan sukses hanya tampil sekali, tidak muncul lagi setelah refresh.
   useEffect(() => {
@@ -34,6 +36,34 @@ function LaporanSaya() {
         }
         setError(err.message);
       });
+    const handleKetemu = async (item) => {
+      const yakin = window.confirm(
+        `Tandai "${item.namaBarang}" sudah ketemu? Laporan akan ditutup dan hilang dari katalog barang hilang.`,
+      );
+      if (!yakin) return;
+
+      setProsesId(item.idLaporan);
+      setError("");
+      setNotice("");
+      try {
+        const res = await apiRequest(`/laporan/${item.idLaporan}/ditemukan`, {
+          method: "POST",
+        });
+        setDaftar((lama) =>
+          lama.map((x) => (x.idLaporan === item.idLaporan ? res.data : x)),
+        );
+        setNotice("Syukurlah! Laporan ditandai sudah ketemu.");
+      } catch (err) {
+        if (err.status === 401) {
+          clearToken();
+          navigate("/login");
+          return;
+        }
+        setError(err.message);
+      } finally {
+        setProsesId(null);
+      }
+    };
     return () => {
       batal = true;
     };
@@ -46,7 +76,7 @@ function LaporanSaya() {
         {daftar ? `${daftar.length} laporan` : "Memuat..."}
       </p>
 
-      <Alert type="ok" message={state?.pesan} />
+      <Alert type="ok" message={notice || state?.pesan} />
       <Alert message={error} />
 
       {daftar && daftar.length === 0 && (
@@ -85,6 +115,18 @@ function LaporanSaya() {
                 <small>{formatTanggal(item.tanggal)}</small>
                 {item.status === "Ditolak" && item.alasanPenolakan && (
                   <p className="lap-tolak">Alasan: {item.alasanPenolakan}</p>
+                )}
+                {item.jenisLaporan === "hilang" && item.status === "Dicari" && (
+                  <button
+                    type="button"
+                    className="lap-ketemu"
+                    disabled={prosesId === item.idLaporan}
+                    onClick={() => handleKetemu(item)}
+                  >
+                    {prosesId === item.idLaporan
+                      ? "Memproses..."
+                      : "Sudah ketemu"}
+                  </button>
                 )}
               </div>
             </article>

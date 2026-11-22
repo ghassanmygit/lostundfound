@@ -124,3 +124,26 @@
     display: flex;
   }
 }
+
+.lap-ketemu {
+  display: block;
+  margin-top: 12px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--biru-tua);
+  background: var(--kuning);
+  cursor: pointer;
+}
+
+.lap-ketemu:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.lap-ketemu:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
