@@ -10,6 +10,7 @@ const statusKlaimSelesai = "Selesai";
 const statusBarangDiklaim = "Diklaim";
 const statusBarangSelesai = "Selesai";
 const statusLokerKosong = "kosong";
+const statusHilangDicari = "Dicari";
 
 // Klaim yang sudah disetujui dan barangnya menunggu diambil pemilik.
 const getDaftarPenjemputan = () =>
@@ -65,6 +66,21 @@ const konfirmasiPenjemputan = async (idKlaimParam) => {
       statusBarangSelesai,
     );
     await klaimModel.updateStatusKlaim(connection, idKlaim, statusKlaimSelesai);
+
+    // Laporan hilang yang ditautkan pengklaim ikut ditutup otomatis.
+    if (klaim.idLaporanHilang) {
+      const hilang = await laporanModel.findLaporanForUpdate(
+        connection,
+        klaim.idLaporanHilang,
+      );
+      if (hilang && hilang.status === statusHilangDicari) {
+        await laporanModel.updateStatusLaporan(
+          connection,
+          hilang.idLaporan,
+          statusBarangSelesai,
+        );
+      }
+    }
   });
 
   return klaimModel.findKlaimById(idKlaim);

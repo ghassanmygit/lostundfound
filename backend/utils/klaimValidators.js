@@ -18,6 +18,11 @@ const validateKlaim = (data = {}, file) => {
     errors.push(`Ciri khusus maksimal ${maxCiriKhususLength} karakter`);
   }
 
+  const hilang = data.idLaporanHilang;
+  if (hilang !== undefined && hilang !== "" && !isPositiveInteger(hilang)) {
+    errors.push("ID laporan hilang tidak valid");
+  }
+
   checkFoto(file, "Foto bukti kepemilikan wajib diunggah", errors);
 
   return { isValid: errors.length === 0, errors };

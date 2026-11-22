@@ -6,6 +6,7 @@ const { validateKlaim } = require("../utils/klaimValidators");
 const statusKlaimPending = "Pending";
 // Hanya barang yang sudah diverifikasi Satpam (tampil di katalog) yang bisa diklaim.
 const statusBarangTersedia = "Tersedia";
+const statusHilangDicari = "Dicari";
 
 const createKlaim = async (idPengklaim, data, file) => {
   const { isValid, errors } = validateKlaim(data, file);
@@ -39,9 +40,26 @@ const createKlaim = async (idPengklaim, data, file) => {
     );
   }
 
+  // Laporan hilang yang ditautkan harus milik pengklaim sendiri dan masih dicari.
+  const idLaporanHilang = data.idLaporanHilang
+    ? Number(data.idLaporanHilang)
+    : null;
+  if (idLaporanHilang) {
+    const hilang = await laporanModel.findLaporanById(idLaporanHilang);
+    if (
+      !hilang ||
+      hilang.idPengguna !== idPengklaim ||
+      hilang.jenisLaporan !== "hilang" ||
+      hilang.status !== statusHilangDicari
+    ) {
+      throw new AppError("Laporan hilang yang dipilih tidak valid", 400);
+    }
+  }
+
   const idKlaim = await klaimModel.insertKlaim({
     idLaporan,
     idPengklaim,
+    idLaporanHilang,
     fotoBukti: file.filename,
     ciriKhusus: data.ciriKhusus.trim(),
     status: statusKlaimPending,

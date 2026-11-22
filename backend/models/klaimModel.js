@@ -1,23 +1,26 @@
 const db = require("../utils/db");
 
 const selectFields = `k.id_klaim AS idKlaim, k.id_laporan AS idLaporan,
-  l.nama_barang AS namaBarang, k.ciri_khusus AS ciriKhusus,
+  k.id_laporan_hilang AS idLaporanHilang, l.nama_barang AS namaBarang, k.ciri_khusus AS ciriKhusus,
   k.foto_bukti AS fotoBukti, k.status,
   k.alasan_penolakan AS alasanPenolakan, k.tanggal`;
 const fromKlaim = `FROM klaim k JOIN laporan l ON l.id_laporan = k.id_laporan`;
 
 const insertKlaim = async ({
   idLaporan,
+  idLaporanHilang,
   idPengklaim,
   fotoBukti,
   ciriKhusus,
   status,
 }) => {
   const sql = `INSERT INTO klaim
-    (id_laporan, id_pengklaim, foto_bukti, ciri_khusus, status, tanggal)
-    VALUES (?, ?, ?, ?, ?, NOW())`;
+    (id_laporan, id_laporan_hilang, id_pengklaim, foto_bukti, ciri_khusus,
+     status, tanggal)
+    VALUES (?, ?, ?, ?, ?, ?, NOW())`;
   const [result] = await db.execute(sql, [
     idLaporan,
+    idLaporanHilang ?? null,
     idPengklaim,
     fotoBukti,
     ciriKhusus,
@@ -46,16 +49,17 @@ const existsKlaimByStatus = async (idLaporan, idPengklaim, status) => {
   return rows.length > 0;
 };
 
-// Daftar klaim berstatus tertentu (mis. Pending atau Disetujui)
-// mencocokkan barang fisik di loker.
 const findKlaimByStatus = async (status) => {
   const sql = `SELECT k.id_klaim AS idKlaim, k.id_laporan AS idLaporan,
     l.nama_barang AS namaBarang, l.deskripsi AS deskripsiBarang,
     l.foto_barang AS fotoBarang, lk.nomor_loker AS nomorLoker,
     k.ciri_khusus AS ciriKhusus, k.foto_bukti AS fotoBukti,
-    p.nama AS namaPengklaim, p.no_wa AS noWaPengklaim, k.tanggal
+    p.nama AS namaPengklaim, p.no_wa AS noWaPengklaim, k.tanggal,
+    lh.nama_barang AS namaBarangHilang,
+    lh.lokasi_terakhir AS lokasiTerakhirHilang
     FROM klaim k
     JOIN laporan l ON l.id_laporan = k.id_laporan
+    LEFT JOIN laporan lh ON lh.id_laporan = k.id_laporan_hilang
     JOIN pengguna p ON p.id_pengguna = k.id_pengklaim
     LEFT JOIN penempatan_loker pl
       ON pl.id_laporan = l.id_laporan AND pl.tanggal_keluar IS NULL
@@ -65,14 +69,13 @@ const findKlaimByStatus = async (status) => {
   return rows;
 };
 
-// Dipanggil di dalam transaksi. Tanpa forUpdate hanya membaca, dengan
-// forUpdate baris klaim dikunci.
 const findKlaimStatus = async (
   connection,
   idKlaim,
   { forUpdate = false } = {},
 ) => {
-  const sql = `SELECT id_klaim AS idKlaim, id_laporan AS idLaporan, status
+  const sql = `SELECT id_klaim AS idKlaim, id_laporan AS idLaporan,
+    id_laporan_hilang AS idLaporanHilang, status
     FROM klaim WHERE id_klaim = ? ${forUpdate ? "FOR UPDATE" : ""}`;
   const [rows] = await connection.execute(sql, [idKlaim]);
   return rows[0] ?? null;
