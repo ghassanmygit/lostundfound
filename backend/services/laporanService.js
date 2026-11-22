@@ -4,11 +4,14 @@ const {
   validateLaporanTemuan,
   validateLaporanHilang,
 } = require("../utils/validators");
+const { withTransaction } = require("../utils/transaction");
+const { validateIdLaporan } = require("../utils/verifikasiValidators");
 
 const jenisLaporanTemuan = "temuan";
 const jenisLaporanHilang = "hilang";
 const statusTemuanAwal = "Menunggu Verifikasi";
 const statusHilangAwal = "Dicari";
+const statusSelesai = "Selesai";
 
 const trimOrNull = (value) =>
   typeof value === "string" && value.trim() ? value.trim() : null;
@@ -53,4 +56,44 @@ const createLaporanHilang = async (idPengguna, data, file) => {
 const getLaporanSaya = (idPengguna) =>
   laporanModel.findLaporanByPelapor(idPengguna);
 
-module.exports = { createLaporanTemuan, createLaporanHilang, getLaporanSaya };
+const tandaiHilangDitemukan = async (idPengguna, idLaporanParam) => {
+  const errors = validateIdLaporan(idLaporanParam);
+  if (errors.length > 0) throw new AppError("Validasi gagal", 400, errors);
+  const idLaporan = Number(idLaporanParam);
+
+  await withTransaction(async (connection) => {
+    const laporan = await laporanModel.findLaporanForUpdate(
+      connection,
+      idLaporan,
+    );
+    if (!laporan || laporan.idPengguna !== idPengguna) {
+      throw new AppError("Laporan tidak ditemukan", 404);
+    }
+    if (laporan.jenisLaporan !== jenisLaporanHilang) {
+      throw new AppError(
+        "Hanya laporan hilang yang dapat ditandai ketemu",
+        409,
+      );
+    }
+    if (laporan.status !== statusHilangAwal) {
+      throw new AppError(
+        `Laporan sudah diproses (status: ${laporan.status})`,
+        409,
+      );
+    }
+    await laporanModel.updateStatusLaporan(
+      connection,
+      idLaporan,
+      statusSelesai,
+    );
+  });
+
+  return laporanModel.findLaporanById(idLaporan);
+};
+
+module.exports = {
+  createLaporanTemuan,
+  createLaporanHilang,
+  getLaporanSaya,
+  tandaiHilangDitemukan,
+};

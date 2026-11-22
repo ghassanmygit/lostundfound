@@ -33,4 +33,21 @@ const getLaporanSaya = async (req, res) => {
   res.json({ success: true, data: daftarLaporan });
 };
 
-module.exports = { createLaporanTemuan, createLaporanHilang, getLaporanSaya };
+const tandaiHilangDitemukan = async (req, res) => {
+  const laporan = await laporanService.tandaiHilangDitemukan(
+    req.user.idPengguna,
+    req.params.id,
+  );
+  res.json({
+    success: true,
+    message: "Laporan ditandai sudah ketemu",
+    data: laporan,
+  });
+};
+
+module.exports = {
+  createLaporanTemuan,
+  createLaporanHilang,
+  getLaporanSaya,
+  tandaiHilangDitemukan,
+};

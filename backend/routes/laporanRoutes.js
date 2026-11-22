@@ -20,6 +20,11 @@ router.post(
   laporanController.createLaporanHilang,
 );
 router.get("/saya", requireAuth, laporanController.getLaporanSaya);
+router.post(
+  "/:id/ditemukan",
+  requireAuth,
+  laporanController.tandaiHilangDitemukan,
+);
 router.get(
   "/menunggu",
   requireAuth,
