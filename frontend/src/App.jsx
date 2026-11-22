@@ -9,6 +9,8 @@ import LaporBarang from "./pages/LaporBarang";
 import LaporanSaya from "./pages/LaporanSaya";
 import Login from "./pages/Login";
 import Registrasi from "./pages/Registrasi";
+import KlaimSaya from "./pages/KlaimSaya";
+import KlaimSatpam from "./pages/KlaimSatpam";
 
 function App() {
   return (
@@ -35,9 +37,11 @@ function App() {
           />
           <Route path="/lapor" element={<LaporBarang />} />
           <Route path="/laporan-saya" element={<LaporanSaya />} />
+          <Route path="/klaim-saya" element={<KlaimSaya />} />
 
           <Route element={<RoleRoute role="satpam" />}>
             <Route path="/satpam" element={<DashboardSatpam />} />
+            <Route path="/satpam/klaim" element={<KlaimSatpam />} />
           </Route>
         </Route>
 

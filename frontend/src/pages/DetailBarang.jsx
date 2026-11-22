@@ -4,6 +4,9 @@ import { apiRequest, clearToken } from "../api/client";
 import Alert from "../components/Alert";
 import { formatTanggal, urlFoto } from "../utils/format";
 import "./Katalog.css";
+import FormKlaim from "../components/FormKlaim";
+import { getSession } from "../utils/auth";
+import "./KlaimSaya.css";
 
 const teks = {
   temuan: {
@@ -51,6 +54,14 @@ function DetailBarang({ jenis = "temuan" }) {
 
   const foto = barang && urlFoto(barang.fotoBarang);
 
+  const bisaKlaim = jenis === "temuan" && getSession()?.role === "civitas";
+
+  const keKlaimSaya = (pesan) => navigate("/klaim-saya", { state: { pesan } });
+  const sessionHabis = () => {
+    clearToken();
+    navigate("/login");
+  };
+
   return (
     <section>
       <Link to={t.kembali} className="kembali">
@@ -79,6 +90,13 @@ function DetailBarang({ jenis = "temuan" }) {
               <dt>{t.tanggal}</dt>
               <dd>{formatTanggal(barang.tanggal)}</dd>
             </dl>
+            {bisaKlaim && (
+              <FormKlaim
+                idLaporan={barang.idLaporan}
+                onBerhasil={keKlaimSaya}
+                onSessionHabis={sessionHabis}
+              />
+            )}
             {jenis === "hilang" && (
               <p className="catatan">
                 Merasa menemukan barang ini? Serahkan ke pos satpam atau buat

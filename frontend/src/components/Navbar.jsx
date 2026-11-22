@@ -20,12 +20,20 @@ function Navbar() {
         </span>
         <nav className="navbar-menu">
           {session?.role === "satpam" && (
-            <NavLink to="/satpam">Verifikasi</NavLink>
+            <>
+              <NavLink to="/satpam" end>
+                Verifikasi
+              </NavLink>
+              <NavLink to="/satpam/klaim">Klaim</NavLink>
+            </>
           )}
           <NavLink to="/katalog">Temuan</NavLink>
           <NavLink to="/hilang">Hilang</NavLink>
           <NavLink to="/lapor">Lapor</NavLink>
           <NavLink to="/laporan-saya">Laporan Saya</NavLink>
+          {session?.role === "civitas" && (
+            <NavLink to="/klaim-saya">Klaim Saya</NavLink>
+          )}
         </nav>
         <button type="button" className="navbar-keluar" onClick={handleKeluar}>
           Keluar

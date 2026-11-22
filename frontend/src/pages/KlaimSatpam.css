@@ -1,0 +1,45 @@
+.sub-judul {
+  margin: 28px 0 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--biru-tua);
+}
+
+.klaim-fotos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background: var(--putih);
+}
+
+.klaim-fotos figure {
+  position: relative;
+  min-height: 180px;
+  margin: 0;
+  background: var(--biru-muda);
+}
+
+.klaim-fotos img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.klaim-fotos figcaption {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  color: var(--putih);
+  background: rgb(22 55 110 / 0.8);
+}
+
+@media (min-width: 800px) {
+  .verif.klaim-kartu {
+    grid-template-columns: 380px 1fr;
+  }
+}

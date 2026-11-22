@@ -1,0 +1,30 @@
+.status-pending {
+  background: #fdf1c2;
+}
+
+.status-disetujui {
+  background: #dbe7fb;
+}
+
+.klaim-ket {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--biru-tua);
+}
+
+.klaim-form {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--biru-muda);
+}
+
+.klaim-tanya {
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--biru);
+}
+
+.klaim-form .btn {
+  width: auto;
+  padding: 0 28px;
+}

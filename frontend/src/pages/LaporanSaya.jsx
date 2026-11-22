@@ -53,6 +53,7 @@ function LaporanSaya() {
           lama.map((x) => (x.idLaporan === item.idLaporan ? res.data : x)),
         );
         setNotice("Syukurlah! Laporan ditandai sudah ketemu.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (err) {
         if (err.status === 401) {
           clearToken();
@@ -60,6 +61,7 @@ function LaporanSaya() {
           return;
         }
         setError(err.message);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } finally {
         setProsesId(null);
       }
