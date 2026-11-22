@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiRequest } from "../api/client";
 import { cekFoto } from "../utils/foto";
 import Alert from "./Alert";
 import FotoField from "./FotoField";
+import SelectField from "./SelectField";
 import TextareaField from "./TextareaField";
 
 const tanpaError = { message: "", details: [] };
@@ -11,8 +12,28 @@ function FormKlaim({ idLaporan, onBerhasil, onSessionHabis }) {
   const [terbuka, setTerbuka] = useState(false);
   const [ciriKhusus, setCiriKhusus] = useState("");
   const [foto, setFoto] = useState(null);
+  const [idHilang, setIdHilang] = useState("");
+  const [laporanHilang, setLaporanHilang] = useState([]);
   const [error, setError] = useState(tanpaError);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!terbuka) return;
+    let batal = false;
+    apiRequest("/laporan/saya")
+      .then((res) => {
+        if (batal) return;
+        setLaporanHilang(
+          res.data.filter(
+            (l) => l.jenisLaporan === "hilang" && l.status === "Dicari",
+          ),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      batal = true;
+    };
+  }, [terbuka]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,6 +60,7 @@ function FormKlaim({ idLaporan, onBerhasil, onSessionHabis }) {
     body.append("idLaporan", idLaporan);
     body.append("ciriKhusus", ciriKhusus.trim());
     body.append("fotoBukti", foto);
+    if (idHilang) body.append("idLaporanHilang", idHilang);
 
     setLoading(true);
     try {
@@ -86,6 +108,27 @@ function FormKlaim({ idLaporan, onBerhasil, onSessionHabis }) {
         file={foto}
         onChange={setFoto}
       />
+
+      {laporanHilang.length > 0 && (
+        <SelectField
+          id="idLaporanHilang"
+          label="Tautkan ke Laporan Kehilangan Saya (opsional)"
+          value={idHilang}
+          onChange={(e) => setIdHilang(e.target.value)}
+        >
+          <option value="">Tidak ditautkan</option>
+          {laporanHilang.map((l) => (
+            <option key={l.idLaporan} value={l.idLaporan}>
+              {l.namaBarang}
+            </option>
+          ))}
+        </SelectField>
+      )}
+      {laporanHilang.length > 0 && (
+        <small className="field-hint">
+          Laporan hilang yang dipilih otomatis ditutup saat barang diserahkan.
+        </small>
+      )}
 
       <button className="btn" type="submit" disabled={loading}>
         {loading ? "Mengirim..." : "Kirim Klaim"}

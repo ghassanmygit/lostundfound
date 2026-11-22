@@ -40,7 +40,7 @@ function KartuKlaim({ klaim, mode, onSelesai, onSinkron }) {
 
   const handleSerahkan = () => {
     const yakin = window.confirm(
-      `Serahkan "${klaim.namaBarang}" kepada ${klaim.namaPengklaim}? Loker ${klaim.nomorLoker ?? ""} akan dikosongkan.`,
+      `Serahkan "${klaim.namaBarang}" kepada ${klaim.namaPengklaim}? Loker ${klaim.nomorLoker ?? ""} akan dikosongkan.${klaim.namaBarangHilang ? " Laporan kehilangannya ikut ditutup." : ""}`,
     );
     if (!yakin) return;
     kirim(
@@ -81,6 +81,15 @@ function KartuKlaim({ klaim, mode, onSelesai, onSinkron }) {
           <dd>{klaim.deskripsiBarang || "-"}</dd>
           <dt>Ciri khusus menurut pengklaim</dt>
           <dd>{klaim.ciriKhusus}</dd>
+          {klaim.namaBarangHilang && (
+            <>
+              <dt>Tertaut ke laporan kehilangan</dt>
+              <dd>
+                {klaim.namaBarangHilang} · terakhir dilihat di{" "}
+                {klaim.lokasiTerakhirHilang}
+              </dd>
+            </>
+          )}
           <dt>Pengklaim</dt>
           <dd>
             {klaim.namaPengklaim}
