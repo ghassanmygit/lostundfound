@@ -36,40 +36,41 @@ function LaporanSaya() {
         }
         setError(err.message);
       });
-    const handleKetemu = async (item) => {
-      const yakin = window.confirm(
-        `Tandai "${item.namaBarang}" sudah ketemu? Laporan akan ditutup dan hilang dari katalog barang hilang.`,
-      );
-      if (!yakin) return;
-
-      setProsesId(item.idLaporan);
-      setError("");
-      setNotice("");
-      try {
-        const res = await apiRequest(`/laporan/${item.idLaporan}/ditemukan`, {
-          method: "POST",
-        });
-        setDaftar((lama) =>
-          lama.map((x) => (x.idLaporan === item.idLaporan ? res.data : x)),
-        );
-        setNotice("Syukurlah! Laporan ditandai sudah ketemu.");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } catch (err) {
-        if (err.status === 401) {
-          clearToken();
-          navigate("/login");
-          return;
-        }
-        setError(err.message);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } finally {
-        setProsesId(null);
-      }
-    };
     return () => {
       batal = true;
     };
   }, [navigate]);
+
+  const handleKetemu = async (item) => {
+    const yakin = window.confirm(
+      `Tandai "${item.namaBarang}" sudah ketemu? Laporan akan ditutup dan hilang dari katalog barang hilang.`,
+    );
+    if (!yakin) return;
+
+    setProsesId(item.idLaporan);
+    setError("");
+    setNotice("");
+    try {
+      const res = await apiRequest(`/laporan/${item.idLaporan}/ditemukan`, {
+        method: "POST",
+      });
+      setDaftar((lama) =>
+        lama.map((x) => (x.idLaporan === item.idLaporan ? res.data : x)),
+      );
+      setNotice("Syukurlah! Laporan ditandai sudah ketemu.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      if (err.status === 401) {
+        clearToken();
+        navigate("/login");
+        return;
+      }
+      setError(err.message);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setProsesId(null);
+    }
+  };
 
   return (
     <section>

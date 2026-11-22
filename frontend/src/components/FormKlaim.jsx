@@ -7,6 +7,7 @@ import SelectField from "./SelectField";
 import TextareaField from "./TextareaField";
 
 const tanpaError = { message: "", details: [] };
+const tanpaTautan = "tidak-ada";
 
 function FormKlaim({ idLaporan, onBerhasil, onSessionHabis }) {
   const [terbuka, setTerbuka] = useState(false);
@@ -56,11 +57,22 @@ function FormKlaim({ idLaporan, onBerhasil, onSessionHabis }) {
       return;
     }
 
+    if (laporanHilang.length > 0 && !idHilang) {
+      setError({
+        message:
+          'Pilih laporan kehilanganmu, atau pilih "Tidak ada laporan hilang untuk barang ini"',
+        details: [],
+      });
+      return;
+    }
+
     const body = new FormData();
     body.append("idLaporan", idLaporan);
     body.append("ciriKhusus", ciriKhusus.trim());
     body.append("fotoBukti", foto);
-    if (idHilang) body.append("idLaporanHilang", idHilang);
+    if (idHilang && idHilang !== tanpaTautan) {
+      body.append("idLaporanHilang", idHilang);
+    }
 
     setLoading(true);
     try {
@@ -112,22 +124,26 @@ function FormKlaim({ idLaporan, onBerhasil, onSessionHabis }) {
       {laporanHilang.length > 0 && (
         <SelectField
           id="idLaporanHilang"
-          label="Tautkan ke Laporan Kehilangan Saya (opsional)"
+          label="Laporan Kehilangan Saya"
           value={idHilang}
           onChange={(e) => setIdHilang(e.target.value)}
+          required
         >
-          <option value="">Tidak ditautkan</option>
+          <option value="">Pilih laporan kehilangan</option>
           {laporanHilang.map((l) => (
             <option key={l.idLaporan} value={l.idLaporan}>
               {l.namaBarang}
             </option>
           ))}
+          <option value={tanpaTautan}>
+            Tidak ada laporan hilang untuk barang ini
+          </option>
         </SelectField>
       )}
       {laporanHilang.length > 0 && (
-        <small className="field-hint">
+        <p className="klaim-hint">
           Laporan hilang yang dipilih otomatis ditutup saat barang diserahkan.
-        </small>
+        </p>
       )}
 
       <button className="btn" type="submit" disabled={loading}>

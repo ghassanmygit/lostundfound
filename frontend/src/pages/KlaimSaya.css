@@ -28,3 +28,11 @@
   width: auto;
   padding: 0 28px;
 }
+
+.klaim-hint {
+  margin: -8px 0 18px;
+  padding-left: 14px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--teks-redup);
+}
