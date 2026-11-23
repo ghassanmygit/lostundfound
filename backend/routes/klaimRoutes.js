@@ -41,6 +41,14 @@ router.get(
   requireRole("satpam"),
   penjemputanController.getDaftarPenjemputan,
 );
+
+router.get(
+  "/:id/kandidat-hilang",
+  requireAuth,
+  requireRole("satpam"),
+  penjemputanController.getKandidatHilang,
+);
+
 router.post(
   "/:id/serahkan",
   requireAuth,

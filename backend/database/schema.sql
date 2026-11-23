@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS penempatan_loker (
 CREATE TABLE IF NOT EXISTS klaim (
   id_klaim INT AUTO_INCREMENT PRIMARY KEY,
   id_laporan INT NOT NULL,
+  id_laporan_hilang INT NULL,
   id_pengklaim INT NOT NULL,
   id_validator INT NULL,
   foto_bukti VARCHAR(255) NOT NULL,
@@ -60,8 +61,12 @@ CREATE TABLE IF NOT EXISTS klaim (
   alasan_penolakan VARCHAR(255) NULL,
   tanggal DATETIME NOT NULL,
   FOREIGN KEY (id_laporan) REFERENCES laporan(id_laporan),
+  FOREIGN KEY (id_laporan_hilang) REFERENCES laporan(id_laporan),
   FOREIGN KEY (id_pengklaim) REFERENCES pengguna(id_pengguna),
   FOREIGN KEY (id_validator) REFERENCES pengguna(id_pengguna)
 );
 
-INSERT IGNORE INTO loker (nomor_loker) VALUES ('L-01'), ('L-02'), ('L-03');
+INSERT IGNORE INTO loker (nomor_loker) VALUES
+('L-01'),('L-02'),('L-03'),('L-04'),('L-05'),('L-06'),('L-07'),('L-08'),
+('L-09'),('L-10'),('L-11'),('L-12'),('L-13'),('L-14'),('L-15'),('L-16'),
+('L-17'),('L-18'),('L-19'),('L-20');

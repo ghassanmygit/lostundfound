@@ -4,6 +4,7 @@ const lokerModel = require("../models/lokerModel");
 const AppError = require("../utils/appError");
 const { withTransaction } = require("../utils/transaction");
 const { validateIdKlaim } = require("../utils/klaimValidators");
+const { isPositiveInteger } = require("../utils/verifikasiValidators");
 
 const statusKlaimDisetujui = "Disetujui";
 const statusKlaimSelesai = "Selesai";
@@ -16,8 +17,22 @@ const statusHilangDicari = "Dicari";
 const getDaftarPenjemputan = () =>
   klaimModel.findKlaimByStatus(statusKlaimDisetujui);
 
-const konfirmasiPenjemputan = async (idKlaimParam) => {
+const getKandidatHilang = async (idKlaimParam) => {
   const errors = validateIdKlaim(idKlaimParam);
+  if (errors.length > 0) throw new AppError("Validasi gagal", 400, errors);
+  return klaimModel.findKandidatHilang(Number(idKlaimParam));
+};
+
+const konfirmasiPenjemputan = async (idKlaimParam, data = {}) => {
+  const errors = validateIdKlaim(idKlaimParam);
+  const pilihan = data.idLaporanHilang;
+  if (
+    pilihan !== undefined &&
+    pilihan !== null &&
+    !isPositiveInteger(pilihan)
+  ) {
+    errors.push("ID laporan hilang tidak valid");
+  }
   if (errors.length > 0) throw new AppError("Validasi gagal", 400, errors);
   const idKlaim = Number(idKlaimParam);
 
@@ -68,22 +83,36 @@ const konfirmasiPenjemputan = async (idKlaimParam) => {
     await klaimModel.updateStatusKlaim(connection, idKlaim, statusKlaimSelesai);
 
     // Laporan hilang yang ditautkan pengklaim ikut ditutup otomatis.
-    if (klaim.idLaporanHilang) {
+    const idHilang =
+      pilihan === undefined
+        ? klaim.idLaporanHilang
+        : pilihan && Number(pilihan);
+    if (idHilang) {
       const hilang = await laporanModel.findLaporanForUpdate(
         connection,
-        klaim.idLaporanHilang,
+        idHilang,
       );
-      if (hilang && hilang.status === statusHilangDicari) {
-        await laporanModel.updateStatusLaporan(
-          connection,
-          hilang.idLaporan,
-          statusBarangSelesai,
-        );
+      if (
+        !hilang ||
+        hilang.jenisLaporan !== "hilang" ||
+        hilang.idPengguna !== klaim.idPengklaim ||
+        hilang.status !== statusHilangDicari
+      ) {
+        throw new AppError("Laporan hilang yang dipilih tidak valid", 400);
       }
+      await laporanModel.updateStatusLaporan(
+        connection,
+        hilang.idLaporan,
+        statusBarangSelesai,
+      );
     }
   });
 
   return klaimModel.findKlaimById(idKlaim);
 };
 
-module.exports = { getDaftarPenjemputan, konfirmasiPenjemputan };
+module.exports = {
+  getDaftarPenjemputan,
+  getKandidatHilang,
+  konfirmasiPenjemputan,
+};

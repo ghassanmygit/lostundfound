@@ -50,7 +50,7 @@ const existsKlaimByStatus = async (idLaporan, idPengklaim, status) => {
 };
 
 const findKlaimByStatus = async (status) => {
-  const sql = `SELECT k.id_klaim AS idKlaim, k.id_laporan AS idLaporan,
+  const sql = `SELECT k.id_klaim AS idKlaim, k.id_laporan AS idLaporan, k.id_laporan_hilang AS idLaporanHilang,
     l.nama_barang AS namaBarang, l.deskripsi AS deskripsiBarang,
     l.foto_barang AS fotoBarang, lk.nomor_loker AS nomorLoker,
     k.ciri_khusus AS ciriKhusus, k.foto_bukti AS fotoBukti,
@@ -75,7 +75,7 @@ const findKlaimStatus = async (
   { forUpdate = false } = {},
 ) => {
   const sql = `SELECT id_klaim AS idKlaim, id_laporan AS idLaporan,
-    id_laporan_hilang AS idLaporanHilang, status
+    id_laporan_hilang AS idLaporanHilang, id_pengklaim AS idPengklaim, status
     FROM klaim WHERE id_klaim = ? ${forUpdate ? "FOR UPDATE" : ""}`;
   const [rows] = await connection.execute(sql, [idKlaim]);
   return rows[0] ?? null;
@@ -112,6 +112,20 @@ const updateStatusKlaim = async (connection, idKlaim, status) => {
   ]);
 };
 
+const findKandidatHilang = async (idKlaim) => {
+  const sql = `SELECT lh.id_laporan AS idLaporan, lh.nama_barang AS namaBarang,
+    lh.kategori, lh.lokasi_terakhir AS lokasiTerakhir,
+    (lh.kategori = l.kategori) AS kategoriSama
+    FROM klaim k
+    JOIN laporan l ON l.id_laporan = k.id_laporan
+    JOIN laporan lh ON lh.id_pelapor = k.id_pengklaim
+      AND lh.jenis_laporan = 'hilang' AND lh.status = 'Dicari'
+    WHERE k.id_klaim = ?
+    ORDER BY kategoriSama DESC, lh.tanggal DESC, lh.id_laporan DESC`;
+  const [rows] = await db.execute(sql, [idKlaim]);
+  return rows.map((r) => ({ ...r, kategoriSama: Boolean(r.kategoriSama) }));
+};
+
 module.exports = {
   findKlaimByStatus,
   findKlaimStatus,
@@ -122,4 +136,5 @@ module.exports = {
   findKlaimById,
   findKlaimByPengklaim,
   existsKlaimByStatus,
+  findKandidatHilang,
 };
