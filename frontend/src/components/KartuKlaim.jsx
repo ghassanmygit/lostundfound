@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiRequest } from "../api/client";
 import { formatTanggal, urlFoto } from "../utils/format";
 import Alert from "./Alert";
@@ -11,10 +11,34 @@ function KartuKlaim({ klaim, mode, onSelesai, onSinkron }) {
   const [tolak, setTolak] = useState(false);
   const [alasan, setAlasan] = useState("");
   const [sibuk, setSibuk] = useState(false);
+  const [kandidat, setKandidat] = useState([]);
+  const [pilihan, setPilihan] = useState("");
   const [error, setError] = useState(tanpaError);
 
   const fotoBarang = urlFoto(klaim.fotoBarang);
   const fotoBukti = urlFoto(klaim.fotoBukti);
+
+  useEffect(() => {
+    if (mode !== "disetujui") return;
+    let batal = false;
+    apiRequest(`/klaim/${klaim.idKlaim}/kandidat-hilang`)
+      .then((res) => {
+        if (batal) return;
+        setKandidat(res.data);
+        const tertaut = res.data.find(
+          (k) => k.idLaporan === klaim.idLaporanHilang,
+        );
+        const sama = res.data.find((k) => k.kategoriSama);
+        const awal = tertaut ?? sama;
+        setPilihan(awal ? String(awal.idLaporan) : "");
+      })
+      .catch(() => {
+        // Daftar gagal dimuat: penyerahan tetap bisa, tanpa menutup laporan hilang.
+      });
+    return () => {
+      batal = true;
+    };
+  }, [mode, klaim.idKlaim, klaim.idLaporanHilang]);
 
   const kirim = async (aksi, body, pesanSukses) => {
     setError(tanpaError);
@@ -39,13 +63,14 @@ function KartuKlaim({ klaim, mode, onSelesai, onSinkron }) {
     kirim("tolak", { alasan }, `Klaim atas "${klaim.namaBarang}" ditolak`);
 
   const handleSerahkan = () => {
+    const dipilih = kandidat.find((k) => String(k.idLaporan) === pilihan);
     const yakin = window.confirm(
-      `Serahkan "${klaim.namaBarang}" kepada ${klaim.namaPengklaim}? Loker ${klaim.nomorLoker ?? ""} akan dikosongkan.${klaim.namaBarangHilang ? " Laporan kehilangannya ikut ditutup." : ""}`,
+      `Serahkan "${klaim.namaBarang}" kepada ${klaim.namaPengklaim}? Loker ${klaim.nomorLoker ?? ""} akan dikosongkan.${dipilih ? ` Laporan hilang "${dipilih.namaBarang}" ikut ditutup.` : ""}`,
     );
     if (!yakin) return;
     kirim(
       "serahkan",
-      undefined,
+      { idLaporanHilang: pilihan ? Number(pilihan) : null },
       `"${klaim.namaBarang}" diserahkan. Loker dikosongkan`,
     );
   };
@@ -102,7 +127,25 @@ function KartuKlaim({ klaim, mode, onSelesai, onSinkron }) {
         <Alert message={error.message} details={error.details} />
 
         {mode === "disetujui" ? (
-          <div className="verif-aksi">
+          <div className="verif-aksi verif-serah">
+            {kandidat.length > 0 && (
+              <label className="serah-pilih">
+                <span>Tutup laporan kehilangan pemilik</span>
+                <select
+                  value={pilihan}
+                  onChange={(e) => setPilihan(e.target.value)}
+                  disabled={sibuk}
+                >
+                  {kandidat.map((c) => (
+                    <option key={c.idLaporan} value={c.idLaporan}>
+                      {c.namaBarang}
+                      {c.kategoriSama ? " (kategori sama)" : ""}
+                    </option>
+                  ))}
+                  <option value="">Tidak ada yang ditutup</option>
+                </select>
+              </label>
+            )}
             <button
               type="button"
               className="btn"
