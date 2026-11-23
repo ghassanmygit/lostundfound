@@ -21,8 +21,12 @@ function Login() {
         method: "POST",
         body: { email, password },
       });
+      if (res.data.pengguna.role === "satpam") {
+        setError("Akun petugas masuk lewat halaman Masuk Petugas.");
+        return;
+      }
       saveToken(res.data.token);
-      navigate(res.data.pengguna.role === "satpam" ? "/satpam" : "/katalog");
+      navigate("/katalog");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -72,6 +76,11 @@ function Login() {
       </p>
       <p className="auth-switch">
         Belum punya akun? <Link to="/registrasi">Daftar</Link>
+      </p>
+      <p className="auth-staf">
+        <Link className="link-gelap" to="/petugas">
+          Masuk sebagai petugas
+        </Link>
       </p>
     </AuthLayout>
   );

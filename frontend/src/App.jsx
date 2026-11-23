@@ -8,6 +8,7 @@ import Katalog from "./pages/Katalog";
 import LaporBarang from "./pages/LaporBarang";
 import LaporanSaya from "./pages/LaporanSaya";
 import Login from "./pages/Login";
+import LoginPetugas from "./pages/LoginPetugas";
 import Registrasi from "./pages/Registrasi";
 import KlaimSaya from "./pages/KlaimSaya";
 import KlaimSatpam from "./pages/KlaimSatpam";
@@ -18,6 +19,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/petugas" element={<LoginPetugas />} />
         <Route path="/registrasi" element={<Registrasi />} />
         <Route
           path="/kirim-ulang-verifikasi"
