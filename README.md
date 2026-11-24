@@ -1,6 +1,6 @@
-# Lost & Found — Backend
+# Lost & Found — Website Barang Hilang dan Temuan
 
-Repositori untuk Website Lost and Found oleh **Kelompok 6 Rekayasa Perangkat Lunak - 3D**. Backend ini mencakup FR-01 (Autentikasi), FR-02 (Manajemen Laporan), FR-03 (Katalog dan Pencarian), dan FR-07 (Verifikasi Laporan Temuan), beserta pengelolaan loker dasar dari FR-06.
+Repositori untuk Website Lost and Found oleh **Kelompok 6 Rekayasa Perangkat Lunak - 3D**. Sistem terdiri dari backend (Node.js, Express, MySQL) dan frontend (React, Vite) yang mencakup FR-01 (Autentikasi), FR-02 (Manajemen Laporan), FR-03 (Katalog dan Pencarian), FR-04 (Pengajuan Klaim), FR-05 (Validasi Klaim), FR-06 (Manajemen Loker), FR-07 (Verifikasi Laporan Temuan), dan FR-09 (Konfirmasi Penjemputan). FR-08 (Notifikasi) belum dikerjakan.
 
 **Anggota:**
 
@@ -19,7 +19,7 @@ https://github.com/ghassanmygit/lostundfound
 | ---------- | ---------------------------------------------------- |
 | `main`     | Versi stabil (penggabungan `backend` dan `frontend`) |
 | `backend`  | Seluruh kode API di folder `backend/`                |
-| `frontend` | Antarmuka web (React + Vite, masih tahap awal)       |
+| `frontend` | Antarmuka web React + Vite di folder `frontend/`     |
 
 Riwayat commit tiap fitur dapat dilihat lewat awalan pesan commit (mis. `feat(FR-03): ...`).
 
@@ -30,8 +30,12 @@ Riwayat commit tiap fitur dapat dilihat lewat awalan pesan commit (mis. `feat(FR
 | FR-01 | Autentikasi               | UC-01 Registrasi Akun, UC-02 Login Sistem            | Selesai                                                  |
 | FR-02 | Manajemen Laporan         | UC-03 Lapor Barang Hilang, UC-04 Lapor Barang Temuan | Selesai                                                  |
 | FR-03 | Katalog dan Pencarian     | Katalog barang temuan                                | Selesai                                                  |
+| FR-04 | Pengajuan Klaim           | Civitas mengajukan klaim atas barang temuan          | Selesai                                                  |
+| FR-05 | Validasi Klaim            | Satpam menyetujui atau menolak klaim                 | Selesai                                                  |
+| FR-06 | Manajemen Loker           | UC-05                                                | Selesai (penempatan dan pengosongan loker saat serah)    |
 | FR-07 | Verifikasi Laporan Temuan | UC-05 Input dan Penempatan Loker                     | Selesai                                                  |
-| FR-06 | Manajemen Loker           | UC-05                                                | Sebagian (tabel dan penempatan, tanpa pengosongan loker) |
+| FR-09 | Konfirmasi Penjemputan    | Satpam menyerahkan barang kepada pemilik             | Selesai                                                  |
+| FR-08 | Notifikasi                | Pemberitahuan ke pengguna                            | Belum dikerjakan                                         |
 
 ### FR-01 — Autentikasi (UC-01 Registrasi Akun dan UC-02 Login Sistem)
 
@@ -126,13 +130,57 @@ Sebelum laporan temuan dipublikasikan ke katalog, Satpam mencocokkan barang fisi
 - Penolakan (`/tolak`) menangani laporan yang tidak sesuai atau fiktif. Alasan penolakan disimpan di kolom `alasan_penolakan`.
 - Akun `satpam` dibuat manual lewat database (lihat bagian Skema Database).
 
+### FR-04 — Pengajuan Klaim
+
+Civitas yang merasa memiliki barang di katalog mengajukan klaim dengan menjelaskan ciri khusus dan mengunggah foto bukti kepemilikan.
+
+| Aspek    | Keterangan |
+| -------- | ---------- |
+| Endpoint | `POST /api/klaim` (multipart: `idLaporan`, `ciriKhusus`, `fotoBukti`, opsional `idLaporanHilang`), `GET /api/klaim/saya` |
+| Akses    | Peran `civitas` |
+| Validasi | `idLaporan` bilangan bulat positif; `ciriKhusus` wajib, maksimal 500 karakter; `fotoBukti` wajib (JPEG atau PNG, maksimal 5 MB) |
+| Aturan   | Barang harus berstatus Tersedia (404 jika tidak ada di katalog); tidak boleh mengklaim laporan sendiri (403); klaim Pending yang sama tidak boleh diajukan dua kali (409) |
+| Output   | `201` + data klaim berstatus `Pending`; `400`, `401`, `403`, `404`, `409` untuk kondisi di atas |
+
+Keputusan: foto bukti diwajibkan agar Satpam punya pembanding saat memvalidasi, sehingga klaim asal-asalan dapat ditolak. Jika pengaju memiliki laporan hilang berstatus Dicari, antarmuka mewajibkan memilih laporan hilang yang sesuai (atau "tidak ada") supaya laporan hilang dan temuan tidak menumpuk.
+
+### FR-05 — Validasi Klaim
+
+| Aspek    | Keterangan |
+| -------- | ---------- |
+| Endpoint | `GET /api/klaim/pending`, `POST /api/klaim/:id/setujui`, `POST /api/klaim/:id/tolak` (body: `alasan`) |
+| Akses    | Peran `satpam` |
+| Proses   | Transaksi dengan penguncian baris klaim dan laporan; hanya klaim berstatus Pending yang dapat diproses |
+| Hasil    | Setujui: klaim `Disetujui`, laporan temuan `Diklaim`. Tolak: klaim `Ditolak` + `alasan_penolakan` (wajib, maksimal 255 karakter) |
+| Error    | `400` validasi, `403` peran, `404` klaim tidak ada, `409` klaim sudah diproses atau barang tidak lagi tersedia |
+
+### FR-09 — Konfirmasi Penjemputan (dan pengosongan loker, FR-06)
+
+| Aspek    | Keterangan |
+| -------- | ---------- |
+| Endpoint | `GET /api/klaim/disetujui`, `GET /api/klaim/:id/kandidat-hilang`, `POST /api/klaim/:id/serahkan` (body opsional: `idLaporanHilang`) |
+| Akses    | Peran `satpam` |
+| Proses   | Dalam satu transaksi: klaim menjadi `Selesai`, laporan temuan menjadi `Selesai`, `penempatan_loker.tanggal_keluar` diisi, loker kembali `kosong`, dan laporan hilang yang tertaut ditutup (`Selesai`) |
+| Penautan | `idLaporanHilang` tidak dikirim: memakai tautan dari klaim; `null`: tidak ada laporan hilang; angka: laporan hilang pilihan Satpam. Laporan harus milik pengaju klaim, berjenis hilang, dan berstatus Dicari; jika tidak, `400` dan seluruh transaksi dibatalkan |
+| Error    | `409` jika klaim belum berstatus Disetujui |
+
+### Pengembangan di luar FR
+
+Ditambahkan agar sistem tidak menumpuk data dan mudah dipakai, tanpa mengubah alur FR di atas:
+
+- **Katalog barang hilang:** `GET /api/katalog/hilang` dan `/api/katalog/hilang/:id` (wajib login). Kontak dan identitas pelapor disembunyikan dari katalog publik.
+- **"Sudah ketemu":** `POST /api/laporan/:id/ditemukan` oleh pemilik laporan hilang yang menemukan barangnya sendiri (Dicari menjadi Selesai). Laporan milik orang lain dijawab `404`, status selain Dicari `409`.
+- **Penautan klaim ke laporan hilang:** kolom `klaim.id_laporan_hilang` dan pemilih laporan hilang saat Satpam menyerahkan barang.
+- **Kirim ulang verifikasi:** `POST /api/auth/kirim-ulang-verifikasi`.
+- **Halaman `/petugas`:** pintu masuk login khusus Satpam di frontend, terpisah dari login civitas.
+
 ### Keputusan Desain dan Penyesuaian
 
 | Hal                                   | Implementasi                                                                                                                                                                                                | Alasan                                                                                                   |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | Kolom `pengguna`                      | `id_pengguna`, `nama`, `email`, `role`, `no_wa`, ditambah `password_hash`, `status_akun`, `token_verifikasi`                                                                                                | Dibutuhkan registrasi dan login untuk kata sandi, status `pending`/`aktif`, dan tautan verifikasi        |
 | Kolom `laporan`                       | Satu tabel untuk laporan temuan dan hilang: `jenis_laporan`, `lokasi_penitipan`, `lokasi_terakhir`, `kontak`, `tanggal`, `foto_barang`, `alasan_penolakan`. `lokasi_penitipan` dan `foto_barang` boleh NULL | Laporan hilang tidak punya foto dan pos penitipan, laporan temuan tidak punya lokasi terakhir dan kontak |
-| Status laporan                        | "Menunggu Verifikasi" → "Tersedia" atau "Ditolak" (temuan); "Dicari" (hilang)                                                                                                                               | Menandai tahap tiap laporan                                                                              |
+| Status laporan                        | "Menunggu Verifikasi" → "Tersedia" atau "Ditolak" → "Diklaim" → "Selesai" (temuan); "Dicari" → "Selesai" (hilang). Klaim: Pending → Disetujui atau Ditolak → Selesai                                                                                                                               | Menandai tahap tiap laporan                                                                              |
 | Tabel `loker` dan `penempatan_loker`  | Loker mencatat nomor dan status (`kosong`/`terisi`); penempatan menghubungkan laporan, loker, dan satpam beserta tanggal masuk dan keluar                                                                   | Satu loker dipakai berkali-kali, sehingga perlu catatan riwayat. `tanggal_keluar` belum dipakai          |
 | Pengiriman email verifikasi           | Tautan dicetak di terminal server                                                                                                                                                                           | Belum ada layanan email. Alur sama, tinggal diganti dengan `nodemailer`                                  |
 | Pengalihan sesuai peran setelah login | API mengembalikan token dan `role`                                                                                                                                                                          | Pengalihan halaman dilakukan frontend                                                                    |
@@ -201,6 +249,30 @@ Membuat akun Satpam (setelah akun didaftarkan dan diverifikasi, lalu login ulang
 UPDATE pengguna SET role = 'satpam' WHERE email = 'email-satpam@uinjkt.ac.id';
 ```
 
+#### Tabel `klaim` (FR-04, FR-05, FR-09)
+
+```sql
+CREATE TABLE klaim (
+  id_klaim          INT(11) NOT NULL AUTO_INCREMENT,
+  id_laporan        INT(11) NOT NULL,
+  id_laporan_hilang INT(11) NULL DEFAULT NULL,
+  id_pengklaim      INT(11) NOT NULL,
+  id_validator      INT(11) NULL,
+  foto_bukti        VARCHAR(255) NOT NULL,
+  ciri_khusus       TEXT NOT NULL,
+  status            VARCHAR(20) NOT NULL DEFAULT 'Pending',
+  alasan_penolakan  VARCHAR(255) NULL,
+  tanggal           DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_klaim),
+  FOREIGN KEY (id_laporan)        REFERENCES laporan (id_laporan),
+  FOREIGN KEY (id_laporan_hilang) REFERENCES laporan (id_laporan),
+  FOREIGN KEY (id_pengklaim)      REFERENCES pengguna (id_pengguna),
+  FOREIGN KEY (id_validator)      REFERENCES pengguna (id_pengguna)
+);
+```
+
+Skrip lengkap ada di `backend/database/schema.sql`, termasuk data awal loker L-01 sampai L-20. Satpam dibuat dengan `node scripts/buatSatpam.js "Nama" email kataSandi` atau lewat SQL (`UPDATE pengguna SET role='satpam' ...`).
+
 ### Komponen yang Dikembangkan
 
 Semua file berada di folder `backend/`.
@@ -217,6 +289,16 @@ Semua file berada di folder `backend/`.
 | Utils       | `utils/transaction.js`                                                                                                                         | Menjalankan beberapa query sebagai satu transaksi (commit atau rollback)               |
 | Utils       | `utils/upload.js`                                                                                                                              | Upload foto (multer): batas ukuran, nama file acak                                     |
 | Utils       | `utils/errorHandler.js`, `utils/appError.js`, `utils/db.js`                                                                                    | Penanganan error terpusat dan koneksi pool MySQL                                       |
+
+Komponen FR-04, FR-05, dan FR-09:
+
+| Lapisan    | File |
+| ---------- | ---- |
+| Route      | `routes/klaimRoutes.js` |
+| Controller | `controllers/klaimController.js`, `controllers/validasiKlaimController.js`, `controllers/penjemputanController.js` |
+| Service    | `services/klaimService.js`, `services/validasiKlaimService.js`, `services/penjemputanService.js` |
+| Model      | `models/klaimModel.js` |
+| Utils      | `utils/klaimValidators.js` |
 
 Prinsip yang diterapkan: penamaan camelCase, pemisahan tanggung jawab per lapisan (SRP), konstanta alih-alih angka langsung (DRY), validasi input sebelum menyentuh database, query berparameter untuk mencegah SQL injection, kata sandi di-hash, transaksi untuk perubahan yang saling terkait, dan error handling terpusat.
 
@@ -244,15 +326,25 @@ Isi `.env`:
 
 File `.env` tidak ikut di-commit. Tautan verifikasi muncul di terminal server dengan awalan `[VERIFIKASI]`.
 
+### Menjalankan Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend berjalan di `http://localhost:5173`. Vite meneruskan `/api` dan `/uploads` ke `http://localhost:3001`, jadi backend harus berjalan lebih dulu. Peran Satpam masuk lewat `/petugas`.
+
 ### Batasan Saat Ini
 
-- Tautan verifikasi belum dikirim lewat email (dicetak di terminal server).
-- Belum ada fitur lupa kata sandi, kirim ulang tautan verifikasi, dan pembatasan jumlah percobaan login.
+- Tautan verifikasi belum dikirim lewat email (dicetak di terminal server dengan awalan `[VERIFIKASI]`), dan notifikasi WhatsApp/email (FR-08) belum ada.
+- Belum ada fitur lupa kata sandi dan pembatasan jumlah percobaan login (rate limiting).
 - Tipe foto dicek dari `mimetype` yang dikirim klien, belum dari isi file.
 - Foto di `/uploads` dapat dibuka siapa pun yang mengetahui nama filenya. Nama file acak sehingga sulit ditebak, tetapi belum ada kontrol akses per foto.
-- JSON yang rusak pada body request masih dijawab `500`, seharusnya `400`.
-- Loker ditambah lewat SQL (belum ada endpoint pengelolaan loker), dan `tanggal_keluar` belum diisi karena pengambilan barang (FR-09) belum dikerjakan.
-- Belum ada klaim (FR-04 dan FR-05), konfirmasi penjemputan (FR-09), dan notifikasi (FR-08).
+- File foto tidak pernah dihapus, termasuk setelah barang diserahkan; belum ada tugas pembersihan terjadwal.
+- Loker ditambah lewat SQL (belum ada endpoint pengelolaan loker).
+- Akun Satpam dibuat lewat skrip atau SQL, bukan dari antarmuka.
 
 ## 3. Temuan Code Review dan Hasil Refactoring (Before–After)
 
@@ -401,6 +493,49 @@ const createLaporanTemuan = async (idPengguna, data, file) => { ...
 // utils/validators.js: validasi idPengguna dihapus
 ```
 
+### Temuan 6 — Fungsi pengubah state didefinisikan di dalam `useEffect` (frontend)
+
+- **Masalah:** `handleKetemu` pada `LaporanSaya.jsx` ditulis di dalam `useEffect`, sehingga tidak terjangkau oleh tombol di JSX. Tombol "Sudah ketemu" tampak ada tetapi tidak melakukan apa pun, tanpa pesan error.
+- **Perbaikan:** fungsi dipindah ke tingkat komponen (di luar `useEffect`), dan halaman digulir ke atas agar pesan hasil terlihat.
+
+```jsx
+// BEFORE
+useEffect(() => {
+  const handleKetemu = async (id) => { /* ... */ };
+  muatLaporan();
+}, []);
+
+// AFTER
+const handleKetemu = async (id) => { /* ... */ };
+useEffect(() => { muatLaporan(); }, []);
+```
+
+### Temuan 7 — Fungsi service tidak mengembalikan nilai (`katalogService.js`)
+
+- **Masalah:** `getDetailKatalog` tidak memiliki `return barang;`, sehingga controller menerima `undefined` dan halaman detail berhenti di "Memuat...".
+- **Perbaikan:** nilai dikembalikan, dan 404 diberi pesan yang sesuai jenis laporan.
+
+```js
+// BEFORE
+const barang = await findKatalogById(id, jenis, statusKatalog[jenis]);
+if (!barang) throw new AppError("Barang tidak ditemukan", 404);
+
+// AFTER
+const barang = await findKatalogById(id, jenis, statusKatalog[jenis]);
+if (!barang) throw new AppError("Barang tidak ditemukan", 404);
+return barang;
+```
+
+### Temuan 8 — Pemilihan kolom publik tidak per jenis laporan (kebocoran data)
+
+- **Masalah:** daftar kolom yang boleh tampil di katalog dipakai sama untuk barang temuan dan hilang. Setelah katalog hilang ditambahkan, kontak dan identitas pelapor berisiko ikut tampil ke publik.
+- **Perbaikan:** kolom publik dipisah per jenis (`publicFields = { temuan, hilang }`) dan query memilih dengan `publicFields[kriteria.jenis]`. TC-K20 memastikan `kontak` tidak muncul di katalog hilang. Selama perbaikan, interpolasi objek ke dalam SQL sempat menghasilkan `SELECT [object Object]`; kesalahan ini dicegah dengan menyusun string kolom per jenis di satu tempat.
+
+### Temuan 9 — Aturan penautan ditulis longgar (data menumpuk)
+
+- **Masalah:** klaim tidak tahu laporan hilang mana yang dipenuhi, sehingga laporan hilang tetap berstatus Dicari setelah barang diserahkan.
+- **Perbaikan:** kolom `klaim.id_laporan_hilang` (opsional di API, wajib dipilih di antarmuka), validasi kepemilikan, jenis, dan status Dicari di service, serta penutupan laporan hilang di dalam transaksi `serahkan`. Jika tautan tidak valid, seluruh transaksi dibatalkan (TC-KL17).
+
 ### Perbaikan lain (konfigurasi dan penamaan)
 
 - **Penamaan file:** semua file diganti ke camelCase tanpa mengubah isi (`laporancontrollers.js` → `laporanController.js`, `laporanmodels.js` → `laporanModel.js`, `laporanroutes.js` → `laporanRoutes.js`, `laporanservices.js` → `laporanService.js`, `apperror.js` → `appError.js`).
@@ -408,7 +543,7 @@ const createLaporanTemuan = async (idPengguna, data, file) => { ...
 
 ## 4. Hasil Pengujian
 
-Pengujian manual dengan cURL. Lingkungan: Windows, Node.js, MySQL 8.0 lokal, database `lostundfound`. Baris bertanda _(isi)_ belum dijalankan dan diisi setelah pengujian.
+Pengujian manual dengan cURL. Lingkungan awal: Windows, Node.js, MySQL 8.0 lokal, database `lostundfound`. Baris bertanda † dijalankan ulang pada 24 November 2026 di lingkungan Linux dengan MariaDB (kompatibel MySQL) dan kode final; kolom hasil aktualnya diambil dari respons nyata. Untuk TC-L06 dan TC-L12, hasil memuat pesan terkait bagian yang diuji saja.
 
 ### 4.1 FR-01 Autentikasi (6 November 2026)
 
@@ -419,14 +554,14 @@ Pengujian manual dengan cURL. Lingkungan: Windows, Node.js, MySQL 8.0 lokal, dat
 | TC-L03 | FR-01 | Normal               | Login dengan akun yang sudah aktif                      | 200 + token                                                  | 200, token diterima                                                                                     | Sesuai  |
 | TC-L04 | FR-01 | Normal               | `GET /api/auth/saya` dengan token                       | 200, berisi `idPengguna` dan `role`                          | 200, `{"idPengguna":2,"role":"civitas"}`                                                                | Sesuai  |
 | TC-L05 | FR-01 | Invalid              | `GET /api/auth/saya` tanpa token                        | 401, "Anda harus login terlebih dahulu"                      | 401, "Anda harus login terlebih dahulu"                                                                 | Sesuai  |
-| TC-L06 | FR-01 | Invalid              | Registrasi dengan email `x@gmail.com`                   | 400, "Gunakan email resmi kampus yang valid"                 | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L07 | FR-01 | Invalid              | Registrasi dengan email yang sudah terdaftar            | 409, "Akun dengan email ini sudah ada. Silakan login"        | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L08 | FR-01 | Invalid              | Registrasi dengan kata sandi `123` dan nama kosong      | 400, "Nama wajib diisi" dan "Kata sandi harus 8-72 karakter" | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L09 | FR-01 | Invalid              | Login sebelum membuka tautan verifikasi                 | 403, "Akun belum aktif..."                                   | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L10 | FR-01 | Invalid              | Login dengan kata sandi salah                           | 401, "Kredensial tidak valid"                                | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L11 | FR-01 | Invalid              | Verifikasi dengan `token=abc`                           | 400, "Tautan verifikasi tidak valid atau sudah dipakai"      | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L12 | FR-01 | Edge (SQL injection) | Registrasi dengan email `a' OR '1'='1@mhs.uinjkt.ac.id` | 400, "Format email tidak valid"                              | _(isi)_                                                                                                 | _(isi)_ |
-| TC-L13 | FR-01 | Edge                 | `GET /api/auth/saya` dengan token palsu `abc.def.ghi`   | 401, "Sesi tidak valid atau sudah berakhir..."               | _(isi)_                                                                                                 | _(isi)_ |
+| TC-L06 | FR-01 | Invalid              | Registrasi dengan email `x@gmail.com`                   | 400, "Gunakan email resmi kampus yang valid"                 | 400, "Gunakan email resmi kampus yang valid" †                                                                                                 | 400, "Gunakan email resmi kampus yang valid" † |
+| TC-L07 | FR-01 | Invalid              | Registrasi dengan email yang sudah terdaftar            | 409, "Akun dengan email ini sudah ada. Silakan login"        | 409, "Akun dengan email ini sudah ada. Silakan login" †                                                                                                 | 409, "Akun dengan email ini sudah ada. Silakan login" † |
+| TC-L08 | FR-01 | Invalid              | Registrasi dengan kata sandi `123` dan nama kosong      | 400, "Nama wajib diisi" dan "Kata sandi harus 8-72 karakter" | 400, "Nama wajib diisi" dan "Kata sandi harus 8-72 karakter" †                                                                                                 | 400, "Nama wajib diisi" dan "Kata sandi harus 8-72 karakter" † |
+| TC-L09 | FR-01 | Invalid              | Login sebelum membuka tautan verifikasi                 | 403, "Akun belum aktif..."                                   | 403, "Akun belum aktif. Verifikasi email Anda terlebih dahulu" †                                                                                                 | 403, "Akun belum aktif. Verifikasi email Anda terlebih dahulu" † |
+| TC-L10 | FR-01 | Invalid              | Login dengan kata sandi salah                           | 401, "Kredensial tidak valid"                                | 401, "Kredensial tidak valid" †                                                                                                 | 401, "Kredensial tidak valid" † |
+| TC-L11 | FR-01 | Invalid              | Verifikasi dengan `token=abc`                           | 400, "Tautan verifikasi tidak valid atau sudah dipakai"      | 400, "Tautan verifikasi tidak valid atau sudah dipakai" †                                                                                                 | 400, "Tautan verifikasi tidak valid atau sudah dipakai" † |
+| TC-L12 | FR-01 | Edge (SQL injection) | Registrasi dengan email `a' OR '1'='1@mhs.uinjkt.ac.id` | 400, "Format email tidak valid"                              | 400, "Format email tidak valid"; tabel `pengguna` tidak berubah †                                                                                                 | 400, "Format email tidak valid"; tabel `pengguna` tidak berubah † |
+| TC-L13 | FR-01 | Edge                 | `GET /api/auth/saya` dengan token palsu `abc.def.ghi`   | 401, "Sesi tidak valid atau sudah berakhir..."               | 401, "Sesi tidak valid atau sudah berakhir. Silakan login ulang" †                                                                                                 | 401, "Sesi tidak valid atau sudah berakhir. Silakan login ulang" † |
 
 ### 4.2 FR-02 Lapor Barang Temuan (3 November 2026, sebelum login ditambahkan)
 
@@ -451,23 +586,23 @@ Pengujian pada tabel ini dijalankan saat `idPengguna` masih dikirim lewat form. 
 
 | ID    | FR    | Jenis           | Langkah                                                              | Hasil yang diharapkan                                         | Hasil aktual | Status  |
 | ----- | ----- | --------------- | -------------------------------------------------------------------- | ------------------------------------------------------------- | ------------ | ------- |
-| TC-12 | FR-02 | Invalid         | Kirim laporan tanpa header `Authorization`                           | 401, "Anda harus login terlebih dahulu"                       | _(isi)_      | _(isi)_ |
-| TC-13 | FR-02 | Edge (keamanan) | Kirim laporan dengan token akun A dan `idPengguna` akun lain di form | 201, tersimpan atas nama akun A, field `idPengguna` diabaikan | _(isi)_      | _(isi)_ |
-| TC-14 | FR-02 | Normal          | Kirim laporan dengan token dan tanpa `idPengguna` di form            | 201, `id_pelapor` sama dengan id akun yang login              | _(isi)_      | _(isi)_ |
+| TC-12 | FR-02 | Invalid         | Kirim laporan tanpa header `Authorization`                           | 401, "Anda harus login terlebih dahulu"                       | 401, "Anda harus login terlebih dahulu" †      | 401, "Anda harus login terlebih dahulu" † |
+| TC-13 | FR-02 | Edge (keamanan) | Kirim laporan dengan token akun A dan `idPengguna` akun lain di form | 201, tersimpan atas nama akun A, field `idPengguna` diabaikan | 201, `idPengguna` pada data = 14 (pemilik token); nilai 15 dari form diabaikan †      | 201, `idPengguna` pada data = 14 (pemilik token); nilai 15 dari form diabaikan † |
+| TC-14 | FR-02 | Normal          | Kirim laporan dengan token dan tanpa `idPengguna` di form            | 201, `id_pelapor` sama dengan id akun yang login              | 201, `idPengguna` terisi dari token †      | 201, `idPengguna` terisi dari token † |
 
 ### 4.4 FR-02 Laporan Barang Hilang dan Daftar Laporan Saya
 
 | ID     | FR    | Jenis                | Langkah                                                                                | Hasil yang diharapkan                                                      | Hasil aktual | Status  |
 | ------ | ----- | -------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------ | ------- |
-| TC-H01 | FR-02 | Normal               | `POST /api/laporan/hilang` dengan token civitas dan data valid                         | 201, status "Dicari"                                                       | _(isi)_      | _(isi)_ |
-| TC-H02 | FR-02 | Invalid              | `POST /api/laporan/hilang` tanpa token                                                 | 401, "Anda harus login terlebih dahulu"                                    | _(isi)_      | _(isi)_ |
-| TC-H03 | FR-02 | Invalid              | Body kosong `{}`                                                                       | 400, empat pesan: nama barang, kategori, lokasi terakhir, dan kontak wajib | _(isi)_      | _(isi)_ |
-| TC-H04 | FR-02 | Invalid              | `kontak` berisi huruf                                                                  | 400, "Nomor kontak wajib diisi (8-15 digit, boleh diawali +)"              | _(isi)_      | _(isi)_ |
-| TC-H05 | FR-02 | Invalid              | Token satpam untuk lapor hilang                                                        | 403, "Anda tidak punya akses ke fitur ini"                                 | _(isi)_      | _(isi)_ |
-| TC-H06 | FR-02 | Edge (batas)         | `lokasiTerakhir` 151 karakter                                                          | 400, "Lokasi terakhir maksimal 150 karakter"                               | _(isi)_      | _(isi)_ |
-| TC-H07 | FR-02 | Edge (SQL injection) | `namaBarang='; DROP TABLE laporan; --` pada laporan hilang                             | 201, tersimpan sebagai teks biasa, tabel tetap ada                         | _(isi)_      | _(isi)_ |
-| TC-S01 | FR-02 | Normal               | `GET /api/laporan/saya` dengan token akun A, setelah A dan B sama-sama membuat laporan | 200, hanya laporan milik A                                                 | _(isi)_      | _(isi)_ |
-| TC-S02 | FR-02 | Invalid              | `GET /api/laporan/saya` tanpa token                                                    | 401                                                                        | _(isi)_      | _(isi)_ |
+| TC-H01 | FR-02 | Normal               | `POST /api/laporan/hilang` dengan token civitas dan data valid                         | 201, status "Dicari"                                                       | 201, "Laporan barang hilang berhasil dibuat" †      | 201, "Laporan barang hilang berhasil dibuat" † |
+| TC-H02 | FR-02 | Invalid              | `POST /api/laporan/hilang` tanpa token                                                 | 401, "Anda harus login terlebih dahulu"                                    | 401, "Anda harus login terlebih dahulu" †      | 401, "Anda harus login terlebih dahulu" † |
+| TC-H03 | FR-02 | Invalid              | Body kosong `{}`                                                                       | 400, empat pesan: nama barang, kategori, lokasi terakhir, dan kontak wajib | 400, daftar error nama, kategori, lokasi terakhir, dan kontak †      | 400, daftar error nama, kategori, lokasi terakhir, dan kontak † |
+| TC-H04 | FR-02 | Invalid              | `kontak` berisi huruf                                                                  | 400, "Nomor kontak wajib diisi (8-15 digit, boleh diawali +)"              | 400, "Nomor kontak wajib diisi (8-15 digit, boleh diawali +)" †      | 400, "Nomor kontak wajib diisi (8-15 digit, boleh diawali +)" † |
+| TC-H05 | FR-02 | Invalid              | Token satpam untuk lapor hilang                                                        | 403, "Anda tidak punya akses ke fitur ini"                                 | 403, "Anda tidak punya akses ke fitur ini" †      | 403, "Anda tidak punya akses ke fitur ini" † |
+| TC-H06 | FR-02 | Edge (batas)         | `lokasiTerakhir` 151 karakter                                                          | 400, "Lokasi terakhir maksimal 150 karakter"                               | 400, "Lokasi terakhir maksimal 150 karakter" †      | 400, "Lokasi terakhir maksimal 150 karakter" † |
+| TC-H07 | FR-02 | Edge (SQL injection) | `namaBarang='; DROP TABLE laporan; --` pada laporan hilang                             | 201, tersimpan sebagai teks biasa, tabel tetap ada                         | 201, teks disimpan apa adanya sebagai data; tabel `laporan` tetap ada †      | 201, teks disimpan apa adanya sebagai data; tabel `laporan` tetap ada † |
+| TC-S01 | FR-02 | Normal               | `GET /api/laporan/saya` dengan token akun A, setelah A dan B sama-sama membuat laporan | 200, hanya laporan milik A                                                 | 200, daftar hanya berisi laporan milik akun yang login (`idPengguna` 14) †      | 200, daftar hanya berisi laporan milik akun yang login (`idPengguna` 14) † |
+| TC-S02 | FR-02 | Invalid              | `GET /api/laporan/saya` tanpa token                                                    | 401                                                                        | 401, "Anda harus login terlebih dahulu" †      | 401, "Anda harus login terlebih dahulu" † |
 
 ### 4.5 FR-07 Verifikasi Laporan Temuan (9 November 2026)
 
@@ -488,10 +623,10 @@ Data uji: laporan temuan id 1 sampai 6 dari pengujian FR-02, loker L-01 sampai L
 | TC-V11 | FR-07 | Invalid              | Tolak tanpa alasan                                                               | 400, "Alasan penolakan wajib diisi"                           | 400, errors: "Alasan penolakan wajib diisi"                                   | Sesuai  |
 | TC-V12 | FR-07 | Invalid              | Tolak laporan 3 yang sudah ditolak                                               | 409, laporan sudah diproses                                   | 409, "Laporan sudah diproses (status: Ditolak)"                               | Sesuai  |
 | TC-V13 | FR-07 | Invalid              | `GET /api/laporan/menunggu` tanpa token                                          | 401, "Anda harus login terlebih dahulu"                       | 401, "Anda harus login terlebih dahulu"                                       | Sesuai  |
-| TC-V14 | FR-07 | Invalid              | `GET /api/laporan/menunggu` dengan token civitas                                 | 403, "Anda tidak punya akses ke fitur ini"                    | _(isi)_                                                                       | _(isi)_ |
-| TC-V15 | FR-07 | Edge (batas)         | Alasan penolakan 256 karakter                                                    | 400, "Alasan penolakan maksimal 255 karakter"                 | _(isi)_                                                                       | _(isi)_ |
-| TC-V16 | FR-07 | Edge (SQL injection) | Alasan penolakan `'; DROP TABLE laporan; --`                                     | 200, alasan tersimpan sebagai teks biasa, tabel tetap ada     | _(isi)_                                                                       | _(isi)_ |
-| TC-V17 | FR-07 | Edge (konkurensi)    | Dua satpam memverifikasi dua laporan berbeda ke loker yang sama secara bersamaan | Satu 200 dan satu 409, hanya satu baris penempatan            | _(isi)_                                                                       | _(isi)_ |
+| TC-V14 | FR-07 | Invalid              | `GET /api/laporan/menunggu` dengan token civitas                                 | 403, "Anda tidak punya akses ke fitur ini"                    | 403, "Anda tidak punya akses ke fitur ini" †                                                                       | 403, "Anda tidak punya akses ke fitur ini" † |
+| TC-V15 | FR-07 | Edge (batas)         | Alasan penolakan 256 karakter                                                    | 400, "Alasan penolakan maksimal 255 karakter"                 | 400, "Alasan penolakan maksimal 255 karakter" †                                                                       | 400, "Alasan penolakan maksimal 255 karakter" † |
+| TC-V16 | FR-07 | Edge (SQL injection) | Alasan penolakan `'; DROP TABLE laporan; --`                                     | 200, alasan tersimpan sebagai teks biasa, tabel tetap ada     | 200, "Laporan ditolak"; teks disimpan sebagai data, tabel `laporan` tetap ada †                                                                       | 200, "Laporan ditolak"; teks disimpan sebagai data, tabel `laporan` tetap ada † |
+| TC-V17 | FR-07 | Edge (konkurensi)    | Dua satpam memverifikasi dua laporan berbeda ke loker yang sama secara bersamaan | Satu 200 dan satu 409, hanya satu baris penempatan            | Belum dijalankan ulang (perlu dua sesi paralel di lingkungan MySQL)                                                                       | Belum dijalankan ulang (perlu dua sesi paralel di lingkungan MySQL) |
 
 ### 4.6 FR-03 Katalog dan Pencarian (9 November 2026)
 
@@ -503,18 +638,48 @@ Data uji: laporan temuan id 1 berstatus "Tersedia"; laporan lain masih menunggu 
 | TC-K02 | FR-03 | Normal                 | `GET /api/katalog?cari=dompet`                           | 200, hanya barang yang namanya atau deskripsinya memuat "dompet"                   | 200, laporan 1                                                              | Sesuai  |
 | TC-K03 | FR-03 | Normal                 | `GET /api/katalog?kategori=elektronik&batas=5&halaman=1` | 200, hanya kategori elektronik                                                     | 200, data kosong, `total` 0 (belum ada barang elektronik yang tersedia)     | Sesuai  |
 | TC-K04 | FR-03 | Normal                 | `GET /api/katalog/1`                                     | 200, detail barang                                                                 | 200, detail laporan 1 tanpa `idPengguna`                                    | Sesuai  |
-| TC-K05 | FR-03 | Normal                 | Paging: `?batas=1&halaman=2` setelah dua barang tersedia | 200, satu barang, `totalHalaman` 2                                                 | _(isi)_                                                                     | _(isi)_ |
+| TC-K05 | FR-03 | Normal                 | Paging: `?batas=1&halaman=2` setelah dua barang tersedia | 200, satu barang, `totalHalaman` 2                                                 | 200, `meta`: halaman 2, batas 1, total 17, totalHalaman 17 †                                                                     | 200, `meta`: halaman 2, batas 1, total 17, totalHalaman 17 † |
 | TC-K06 | FR-03 | Invalid                | `GET /api/katalog` tanpa token                           | 401, "Anda harus login terlebih dahulu"                                            | 401, "Anda harus login terlebih dahulu"                                     | Sesuai  |
-| TC-K07 | FR-03 | Invalid                | `?kategori=senjata`                                      | 400, daftar kategori yang diizinkan                                                | _(isi)_                                                                     | _(isi)_ |
-| TC-K08 | FR-03 | Invalid                | `?halaman=0&batas=51`                                    | 400, halaman harus positif dan batas 1-50                                          | _(isi)_                                                                     | _(isi)_ |
-| TC-K09 | FR-03 | Invalid                | `GET /api/katalog/abc`                                   | 400, "ID laporan tidak valid"                                                      | _(isi)_                                                                     | _(isi)_ |
-| TC-K10 | FR-03 | Invalid                | `GET /api/katalog/9999`                                  | 404, "Barang tidak ditemukan di katalog"                                           | _(isi)_                                                                     | _(isi)_ |
-| TC-K11 | FR-03 | Invalid                | `GET /api/katalog/<id laporan hilang>`                   | 404, laporan hilang tidak ada di katalog                                           | _(isi)_                                                                     | _(isi)_ |
-| TC-K12 | FR-03 | Invalid                | `GET /api/katalog/<id laporan yang belum diverifikasi>`  | 404, barang belum tampil di katalog                                                | _(isi)_                                                                     | _(isi)_ |
-| TC-K13 | FR-03 | Edge (SQL injection)   | `?cari=' OR '1'='1`                                      | 200, data kosong, tabel tetap ada, tidak semua barang tampil                       | _(isi)_                                                                     | _(isi)_ |
-| TC-K14 | FR-03 | Edge (karakter khusus) | `?cari=%` dan `?cari=_`                                  | 200, hanya barang yang namanya benar-benar memuat karakter itu, bukan semua barang | _(isi)_                                                                     | _(isi)_ |
+| TC-K07 | FR-03 | Invalid                | `?kategori=senjata`                                      | 400, daftar kategori yang diizinkan                                                | 400, "Kategori harus salah satu dari: ..." †                                                                     | 400, "Kategori harus salah satu dari: ..." † |
+| TC-K08 | FR-03 | Invalid                | `?halaman=0&batas=51`                                    | 400, halaman harus positif dan batas 1-50                                          | 400, "Halaman harus berupa bilangan bulat positif" dan "Batas per halaman harus bilangan bulat 1-50" †                                                                     | 400, "Halaman harus berupa bilangan bulat positif" dan "Batas per halaman harus bilangan bulat 1-50" † |
+| TC-K09 | FR-03 | Invalid                | `GET /api/katalog/abc`                                   | 400, "ID laporan tidak valid"                                                      | 400, "ID laporan tidak valid" †                                                                     | 400, "ID laporan tidak valid" † |
+| TC-K10 | FR-03 | Invalid                | `GET /api/katalog/9999`                                  | 404, "Barang tidak ditemukan di katalog"                                           | 404, "Barang tidak ditemukan di katalog" †                                                                     | 404, "Barang tidak ditemukan di katalog" † |
+| TC-K11 | FR-03 | Invalid                | `GET /api/katalog/<id laporan hilang>`                   | 404, laporan hilang tidak ada di katalog                                           | 404, "Barang tidak ditemukan di katalog" †                                                                     | 404, "Barang tidak ditemukan di katalog" † |
+| TC-K12 | FR-03 | Invalid                | `GET /api/katalog/<id laporan yang belum diverifikasi>`  | 404, barang belum tampil di katalog                                                | 404, "Barang tidak ditemukan di katalog" †                                                                     | 404, "Barang tidak ditemukan di katalog" † |
+| TC-K13 | FR-03 | Edge (SQL injection)   | `?cari=' OR '1'='1`                                      | 200, data kosong, tabel tetap ada, tidak semua barang tampil                       | 200, `data` kosong, `total` 0; tidak ada baris yang bocor †                                                                     | 200, `data` kosong, `total` 0; tidak ada baris yang bocor † |
+| TC-K14 | FR-03 | Edge (karakter khusus) | `?cari=%` dan `?cari=_`                                  | 200, hanya barang yang namanya benar-benar memuat karakter itu, bukan semua barang | 200, `data` kosong, `total` 0; `%` dan `_` diperlakukan sebagai teks biasa †                                                                     | 200, `data` kosong, `total` 0; `%` dan `_` diperlakukan sebagai teks biasa † |
 | TC-K15 | FR-03 | Edge (batas)           | `cari` 101 karakter                                      | 400, "Kata kunci pencarian maksimal 100 karakter"                                  | 400, "Validasi gagal", errors: "Kata kunci pencarian maksimal 100 karakter" | Sesuai  |
 | TC-K16 | FR-03 | Edge                   | `?cari=&kategori=&halaman=&batas=` (semua kosong)        | 200, diperlakukan sebagai tanpa filter                                             | 200, laporan 1, `meta` halaman 1 dan batas 10 (nilai bawaan)                | Sesuai  |
+
+### 4.7 FR-04, FR-05, FR-09 dan fitur tambahan (24 November 2026) †
+
+| ID | FR | Jenis | Langkah | Hasil yang diharapkan | Hasil aktual |
+| -- | -- | ----- | ------- | --------------------- | ------------ |
+| TC-KL01 | FR-04 | Invalid | `POST /api/klaim` tanpa token | 401 | 401, "Anda harus login terlebih dahulu" |
+| TC-KL02 | FR-04 | Invalid | Klaim laporan yang belum diverifikasi | 404 | 404, "Barang tidak ditemukan di katalog" |
+| TC-KL03 | FR-04 | Invalid | Klaim barang yang dilaporkan sendiri | 403 | 403, "Anda tidak dapat mengklaim barang yang Anda laporkan sendiri" |
+| TC-KL04 | FR-04 | Invalid | Klaim tanpa `ciriKhusus` | 400 | 400, "Ciri khusus barang wajib diisi" |
+| TC-KL05 | FR-04 | Invalid | Klaim tanpa `fotoBukti` | 400 | 400, "Foto bukti kepemilikan wajib diunggah" |
+| TC-KL06 | FR-04 | Invalid | Klaim dengan token satpam | 403 | 403, "Anda tidak punya akses ke fitur ini" |
+| TC-KL07 | FR-04 | Normal | Klaim barang Tersedia milik akun lain dengan data valid | 201, status `Pending` | 201, "Klaim berhasil diajukan dan menunggu validasi Satpam", status `Pending` |
+| TC-KL08 | FR-04 | Invalid | Klaim barang yang sama saat klaim pertama masih Pending | 409 | 409, "Anda sudah mengajukan klaim untuk barang ini dan masih menunggu validasi" |
+| TC-KL09 | FR-04 | Normal | `GET /api/klaim/saya` | 200, memuat klaim akun | 200, berisi klaim yang baru diajukan |
+| TC-KL10 | FR-05 | Invalid | `GET /api/klaim/pending` dengan token civitas | 403 | 403, "Anda tidak punya akses ke fitur ini" |
+| TC-KL11 | FR-05 | Normal | `GET /api/klaim/pending` dengan token satpam | 200, daftar klaim Pending | 200, daftar klaim beserta nomor loker |
+| TC-KL12 | FR-09 | Invalid | `serahkan` klaim yang masih Pending | 409 | 409, "Klaim belum atau tidak dapat diserahkan (status: Pending)" |
+| TC-KL13 | FR-05 | Invalid | Tolak tanpa alasan | 400 | 400, "Alasan penolakan wajib diisi" |
+| TC-KL14 | FR-05 | Normal | Setujui klaim Pending | 200, status `Disetujui` | 200, "Klaim disetujui. Barang siap diambil oleh pengaju" |
+| TC-KL15 | FR-05 | Invalid | Setujui klaim yang sudah diproses | 409 | 409, "Klaim sudah diproses (status: Disetujui)" |
+| TC-KL16 | FR-09 | Normal | `GET /api/klaim/:id/kandidat-hilang` | 200, laporan hilang Dicari milik pengaju | 200, daftar kandidat dengan penanda `kategoriSama` |
+| TC-KL17 | FR-09 | Invalid | `serahkan` dengan `idLaporanHilang` milik akun lain | 400, transaksi batal | 400, "Laporan hilang yang dipilih tidak valid"; klaim tetap Disetujui |
+| TC-KL18 | FR-09 | Normal | `serahkan` dengan `idLaporanHilang` milik pengaju | 200; klaim, temuan, dan hilang `Selesai`; loker `kosong` | 200, "Barang telah diserahkan kepada pemilik dan loker dikosongkan"; status klaim, temuan, dan hilang `Selesai`, loker `kosong` |
+| TC-KL19 | FR-09 | Invalid | `serahkan` ulang klaim yang sudah Selesai | 409 | 409, "Klaim belum atau tidak dapat diserahkan (status: Selesai)" |
+| TC-KL20 | Tambahan | Edge (privasi) | `GET /api/katalog/hilang` dan cari `kontak` pada respons | Kontak tidak muncul | Tidak ada field `kontak` pada respons |
+| TC-KL21 | Tambahan | Invalid | `POST /api/laporan/:id/ditemukan` pada laporan hilang milik akun lain | 404 | 404, "Laporan tidak ditemukan" |
+| TC-KL22 | Tambahan | Normal | `ditemukan` oleh pemilik laporan hilang berstatus Dicari | 200, status `Selesai` | 200, "Laporan ditandai sudah ketemu" |
+| TC-KL23 | Tambahan | Invalid | `ditemukan` ulang pada laporan yang sudah Selesai | 409 | 409, "Laporan sudah diproses (status: Selesai)" |
+
+Tanda † berarti kasus dijalankan ulang di Linux dengan MariaDB pada 24 November 2026; TC-V17 (konkurensi) belum dijalankan ulang.
 
 Catatan: query memakai parameter (`?`), sehingga input seperti pada TC-08 diperlakukan sebagai data, bukan perintah SQL. Karakter HTML pada TC-11 disimpan apa adanya; pencegahan XSS dilakukan saat data ditampilkan di antarmuka, di luar cakupan tugas ini.
 
@@ -522,9 +687,9 @@ Riwayat perintah terminal pengerjaan dan pengujian terlampir di LMS sebagai bukt
 
 ## 5. Daftar Kontribusi Anggota
 
-| Anggota                      | Kontribusi                                     |
-| ---------------------------- | ---------------------------------------------- |
-| Faiz Abyakta Santoso         | models, routes                                 |
-| Fandy Ahmad Fahrezy          | controllers, utils                             |
-| Muhammad Ghassan Dzul Hannan | validasi, perbaikan code review, dan pengujian |
-| Yazid Dio Alamgir            | README dan service                             |
+| Anggota                      | Kontribusi |
+| ---------------------------- | ---------- |
+| Faiz Abyakta Santoso         | models, routes |
+| Fandy Ahmad Fahrezy          | controllers, utils, WhatsApp Gateway, pengujian dan perbaikan |
+| Muhammad Ghassan Dzul Hannan | validasi, perbaikan code review, pengujian, frontend (React), fitur klaim, katalog hilang, dan penyerahan barang |
+| Yazid Dio Alamgir            | README, desain logo, service |
