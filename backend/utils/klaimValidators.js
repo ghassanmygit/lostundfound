@@ -1,0 +1,34 @@
+const {
+  checkFoto,
+  isFilledString,
+  isWithinMaxLength,
+} = require("./validators");
+const { isPositiveInteger } = require("./verifikasiValidators");
+
+const maxCiriKhususLength = 500;
+
+const validateKlaim = (data = {}, file) => {
+  const errors = [];
+
+  if (!isPositiveInteger(data.idLaporan)) errors.push("ID laporan tidak valid");
+
+  if (!isFilledString(data.ciriKhusus)) {
+    errors.push("Ciri khusus barang wajib diisi");
+  } else if (!isWithinMaxLength(data.ciriKhusus, maxCiriKhususLength)) {
+    errors.push(`Ciri khusus maksimal ${maxCiriKhususLength} karakter`);
+  }
+
+  const hilang = data.idLaporanHilang;
+  if (hilang !== undefined && hilang !== "" && !isPositiveInteger(hilang)) {
+    errors.push("ID laporan hilang tidak valid");
+  }
+
+  checkFoto(file, "Foto bukti kepemilikan wajib diunggah", errors);
+
+  return { isValid: errors.length === 0, errors };
+};
+
+const validateIdKlaim = (idKlaim) =>
+  isPositiveInteger(idKlaim) ? [] : ["ID klaim tidak valid"];
+
+module.exports = { validateKlaim, validateIdKlaim };
