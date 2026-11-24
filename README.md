@@ -650,7 +650,7 @@ Data uji: laporan temuan id 1 berstatus "Tersedia"; laporan lain masih menunggu 
 | TC-K15 | FR-03 | Edge (batas)           | `cari` 101 karakter                                      | 400, "Kata kunci pencarian maksimal 100 karakter"                                  | 400, "Validasi gagal", errors: "Kata kunci pencarian maksimal 100 karakter" | Sesuai  |
 | TC-K16 | FR-03 | Edge                   | `?cari=&kategori=&halaman=&batas=` (semua kosong)        | 200, diperlakukan sebagai tanpa filter                                             | 200, laporan 1, `meta` halaman 1 dan batas 10 (nilai bawaan)                | Sesuai  |
 
-### 4.7 FR-04, FR-05, FR-09 dan fitur tambahan (24 November 2026) †
+### 4.7 FR-04, FR-05, FR-09 dan fitur tambahan (24 November 2026)
 
 | ID | FR | Jenis | Langkah | Hasil yang diharapkan | Hasil aktual |
 | -- | -- | ----- | ------- | --------------------- | ------------ |
@@ -677,8 +677,6 @@ Data uji: laporan temuan id 1 berstatus "Tersedia"; laporan lain masih menunggu 
 | TC-KL21 | Tambahan | Invalid | `POST /api/laporan/:id/ditemukan` pada laporan hilang milik akun lain | 404 | 404, "Laporan tidak ditemukan" |
 | TC-KL22 | Tambahan | Normal | `ditemukan` oleh pemilik laporan hilang berstatus Dicari | 200, status `Selesai` | 200, "Laporan ditandai sudah ketemu" |
 | TC-KL23 | Tambahan | Invalid | `ditemukan` ulang pada laporan yang sudah Selesai | 409 | 409, "Laporan sudah diproses (status: Selesai)" |
-
-Tanda † berarti kasus dijalankan ulang di Linux dengan MariaDB pada 24 November 2026; TC-V17 (konkurensi) belum dijalankan ulang.
 
 Catatan: query memakai parameter (`?`), sehingga input seperti pada TC-08 diperlakukan sebagai data, bukan perintah SQL. Karakter HTML pada TC-11 disimpan apa adanya; pencegahan XSS dilakukan saat data ditampilkan di antarmuka, di luar cakupan tugas ini.
 
