@@ -690,6 +690,6 @@ Riwayat perintah terminal pengerjaan dan pengujian terlampir di LMS sebagai bukt
 | Anggota                      | Kontribusi |
 | ---------------------------- | ---------- |
 | Faiz Abyakta Santoso         | models, routes |
-| Fandy Ahmad Fahrezy          | controllers, utils, WhatsApp Gateway, pengujian dan|
+| Fandy Ahmad Fahrezy          | controllers, utils, WhatsApp Gateway, pengujian dan perbaikan |
 | Muhammad Ghassan Dzul Hannan | validasi, perbaikan code review, pengujian, frontend (React), fitur klaim, katalog hilang, dan penyerahan barang |
 | Yazid Dio Alamgir            | README, desain logo, service |
